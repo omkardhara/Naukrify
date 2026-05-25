@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Naukrify (V0)",
+  "version": "0.0.1",
+  "description": "AI tailored CV summary + cover letter for India job hunters. Bring your own Gemini key. Zero cost after install.",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": [
+    "https://www.linkedin.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://*.supabase.co/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Naukrify settings"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.linkedin.com/jobs/*"],
+      "js": ["lib/config.js", "lib/sync.js", "content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

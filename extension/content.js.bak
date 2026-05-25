@@ -1,0 +1,350 @@
+// Naukrify content script (V0)
+// Injects a "Tailor with AI" button on LinkedIn job pages.
+// On click, reads the JD, calls Gemini with the user's BYOK key,
+// generates a cover letter + tailored CV summary, runs voice-rules filter.
+
+(() => {
+  'use strict';
+
+  const BUTTON_ID = 'naukrify-fab';
+  const PANEL_ID = 'naukrify-panel';
+
+  // ===== Voice rules engine =====
+
+  const BANNED_VOCAB = [
+    'delve','realm','harness','unlock','tapestry','paradigm','cutting-edge','revolutionize',
+    'intricate','intricacies','showcasing','crucial','pivotal','surpass','meticulously',
+    'vibrant','unparalleled','underscore','leverage','synergy','innovative','game-changer',
+    'testament','commendable','meticulous','boast','groundbreaking','align','foster',
+    'showcase','enhance','holistic','garner','accentuate','pioneering','trailblazing',
+    'unleash','versatile','transformative','redefine','seamless','optimize','scalable',
+    'robust','breakthrough','empower','streamline','frictionless','elevate','adaptive',
+    'effortless','data-driven','insightful','proactive','mission-critical','visionary',
+    'disruptive','reimagine','unprecedented','intuitive','leading-edge','synergize',
+    'democratize','accelerate','state-of-the-art','dynamic','immersive','predictive',
+    'transparent','proprietary','integrated','plug-and-play','turnkey','future-proof',
+    'supercharge','enduring','interplay','captivate','high-impact','results-driven',
+    'fast-paced','unforgettable','rooted','spearhead','world-class','best-in-class'
+  ];
+
+  const REFRAME_REGEXES = [
+    /it'?s not (just )?[\w\s']{2,40}, ?it'?s\s+/i,
+    /not just [\w\s']{2,30}, ?but [\w\s']{2,30}/i,
+    /less [\w\s']{2,20}, ?more [\w\s']{2,20}/i,
+    /forget [\w\s']{2,30}, ?focus on [\w\s']{2,30}/i,
+  ];
+
+  function applyVoiceFilter(text, opts) {
+    const minW = (opts && opts.minWords) || 80;
+    const maxW = (opts && opts.maxWords) || 160;
+    const flags = [];
+    const lower = text.toLowerCase();
+    const hits = [];
+    for (const word of BANNED_VOCAB) {
+      // Match word + common variants (align, aligns, aligning, aligned, alignment).
+      const re = new RegExp('\\b' + word.replace(/-/g, '\\-') + '\\w*', 'i');
+      if (re.test(lower)) hits.push(word);
+    }
+    if (hits.length) flags.push('banned vocab (' + hits.join(', ') + ')');
+    if (/[—–―]/.test(text)) flags.push('em-dash / en-dash');
+    for (const re of REFRAME_REGEXES) {
+      if (re.test(text)) { flags.push('reframe pattern'); break; }
+    }
+    const wc = text.trim().split(/\s+/).length;
+    if (wc > maxW) flags.push('too long (' + wc + ' words)');
+    if (wc < minW) flags.push('too short (' + wc + ' words)');
+    return { text, flags, wordCount: wc, passed: flags.length === 0 };
+  }
+
+  // ===== Prompts =====
+
+  function coverLetterPrompt(jd, cv, voiceNotes) {
+    const voiceBlock = voiceNotes ? `\n\nVOICE NOTES (apply if relevant):\n${voiceNotes}` : '';
+    return `You are writing a 100-140 word cover letter. Three short paragraphs.
+
+JOB DESCRIPTION:
+${jd}
+
+CANDIDATE CV:
+${cv}${voiceBlock}
+
+RULES (treat as failure conditions):
+1. 100-140 words total. Hard ceiling 160.
+2. Three short paragraphs.
+3. Para 1: why this company / role / now. Open with a CONCRETE fact: a specific achievement, number, or named thing from the JD or CV. NEVER open with a feeling or a generic hook. BANNED openers and phrases anywhere: "I am writing to express", "I am excited to apply", "I believe my background aligns", "deeply resonates", "resonates with", "I am particularly drawn to", "drawn to the role", "I am thrilled", "passionate about", "perfect fit", "caught my attention", "excites me".
+4. Para 2: single most relevant achievement from the CV mapped to the JD's biggest need. Include at least 2 specific numbers.
+5. Para 3: direct ask. e.g. "Open to a 20-min call this week" or "Happy to send a 2-page brief on the first 90 days". Cool, professional, not eager.
+6. FACTS ONLY. Use only employers, numbers, sectors, and achievements that literally appear in the CV above. NEVER invent years of experience, a domain, or industry exposure the CV does not state. If the JD wants a sector the candidate lacks (e.g. fintech/BFSI), do NOT claim it. Map a transferable strength instead, honestly.
+
+BANNED VOCABULARY (do not use any of these words OR their variants like aligns/aligning): ${BANNED_VOCAB.join(', ')}.
+
+BANNED PATTERNS:
+- No em-dashes. Use periods, commas, parentheses, colons.
+- No "It's not X, it's Y" or "Not just X, but Y" reframes.
+- No "Furthermore", "Additionally", "Moreover", "That said".
+- No analogies unless the role is technical AND the analogy makes the idea easier.
+
+Output ONLY the cover letter text. No greeting line, no signature, no preamble. Use natural sentence variation.`;
+  }
+
+  function cvTailorPrompt(jd, cv) {
+    return `Rewrite this candidate's 4-sentence professional summary, tailored to the job below.
+
+JOB:
+${jd}
+
+CV:
+${cv}
+
+RULES:
+- 60-90 words.
+- Lead with the achievement most relevant to this JD.
+- Include at least 2 specific numbers from the CV.
+- FACTS ONLY. Use only employers, numbers, sectors, job titles, and achievements that literally appear in the CV above. NEVER invent years of experience, a domain, or industry exposure (e.g. do NOT write "3+ years in fintech/BFSI" unless the CV says so). NEVER assign the candidate a job title the CV does not give them.
+- No banned vocabulary (or variants like aligns/aligning): ${BANNED_VOCAB.join(', ')}.
+- No em-dashes.
+- No "It's not X, it's Y" reframes.
+- No "Furthermore", "Additionally", "Moreover".
+
+Output ONLY the summary text.`;
+  }
+
+  // ===== Gemini API =====
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  async function callGemini(apiKey, prompt) {
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(apiKey);
+    const body = JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 2048,
+        // gemini-2.5-flash is a thinking model. Left on, its reasoning tokens
+        // eat the output budget and the answer gets truncated mid-sentence.
+        // We don't need reasoning for formatted text, so turn thinking off.
+        thinkingConfig: { thinkingBudget: 0 }
+      }
+    });
+
+    let res;
+    // Free tier caps at ~10 requests/min. The auto-clean loop fires several
+    // calls per click, so a 429 (rate limit) or 503 (overloaded) is expected
+    // under bursts. Back off and retry twice before giving up.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body
+      });
+      if (res.ok) break;
+      if ((res.status === 429 || res.status === 503) && attempt < 2) {
+        await sleep(6000 * (attempt + 1));
+        continue;
+      }
+      const errText = await res.text();
+      throw new Error('Gemini ' + res.status + ': ' + errText.slice(0, 250));
+    }
+    const json = await res.json();
+    const text = json && json.candidates && json.candidates[0]
+      && json.candidates[0].content && json.candidates[0].content.parts
+      && json.candidates[0].content.parts[0] && json.candidates[0].content.parts[0].text;
+    if (!text) throw new Error('Empty response from Gemini.');
+    return text.trim();
+  }
+
+  // Targeted rewrite: hand the rejected text back to Gemini and ask it to strip
+  // the offending words while keeping every fact, number, and the structure.
+  function cleanupPrompt(text, flags, opts) {
+    const minW = (opts && opts.minWords) || 80;
+    const maxW = (opts && opts.maxWords) || 160;
+    return `The text below was rejected by a style filter. Fix only the wording.
+
+TEXT:
+${text}
+
+PROBLEMS FOUND: ${flags.join('; ')}
+
+INSTRUCTIONS:
+- Remove every banned word. Replace each with a plain, specific word a normal person would use in conversation. Do not swap one banned word for another.
+- Full banned list (never use any of these or their variants): ${BANNED_VOCAB.join(', ')}.
+- No em-dashes or en-dashes. Use periods, commas, or parentheses.
+- No "It's not X, it's Y" or "Not just X, but Y" reframes.
+- Keep the word count between ${minW} and ${maxW} words.
+- Do NOT change any facts, employer names, numbers, job titles, sectors, or the paragraph structure. Only fix the wording.
+
+Output ONLY the corrected text. No preamble, no explanation.`;
+  }
+
+  // Generate, filter, and auto-clean up to maxRetries times before showing the user.
+  async function generateClean(apiKey, prompt, opts) {
+    const maxRetries = (opts && opts.maxRetries) || 2;
+    let raw = await callGemini(apiKey, prompt);
+    let filt = applyVoiceFilter(raw, opts);
+    let tries = 0;
+    while (!filt.passed && tries < maxRetries) {
+      raw = await callGemini(apiKey, cleanupPrompt(raw, filt.flags, opts));
+      filt = applyVoiceFilter(raw, opts);
+      tries++;
+    }
+    return { text: raw, filter: filt, tries };
+  }
+
+  // ===== DOM extraction =====
+
+  function extractJD() {
+    const sels = [
+      '.jobs-description-content__text',
+      '.jobs-box__html-content',
+      '.jobs-description__content',
+      '.jobs-description',
+      '[class*="jobs-description"]',
+    ];
+    for (const sel of sels) {
+      const el = document.querySelector(sel);
+      if (el && el.innerText && el.innerText.length > 100) return el.innerText.trim();
+    }
+    const main = document.querySelector('main');
+    return main ? main.innerText.trim().slice(0, 8000) : '';
+  }
+
+  function extractCompanyAndRole() {
+    const roleEl = document.querySelector('.job-details-jobs-unified-top-card__job-title, .jobs-unified-top-card__job-title, h1');
+    const companyEl = document.querySelector(
+      '.job-details-jobs-unified-top-card__company-name a, .jobs-unified-top-card__company-name, [class*="company-name"] a, [class*="company-name"]'
+    );
+    return {
+      role: roleEl ? roleEl.innerText.trim().split('\n')[0] : '',
+      company: companyEl ? companyEl.innerText.trim().split('\n')[0] : '',
+    };
+  }
+
+  function slugify(s) {
+    return (s || 'job').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  // ===== Button + panel =====
+
+  function injectButton() {
+    if (document.getElementById(BUTTON_ID)) return;
+    if (!location.pathname.startsWith('/jobs/')) return;
+    const btn = document.createElement('button');
+    btn.id = BUTTON_ID;
+    btn.className = 'naukrify-fab';
+    btn.textContent = 'Tailor with AI';
+    btn.addEventListener('click', openPanel);
+    document.body.appendChild(btn);
+  }
+
+  function openPanel() {
+    const existing = document.getElementById(PANEL_ID);
+    if (existing) existing.remove();
+    const meta = extractCompanyAndRole();
+    const panel = document.createElement('div');
+    panel.id = PANEL_ID;
+    panel.className = 'naukrify-panel';
+    panel.innerHTML = `
+      <div class="naukrify-header">
+        <span class="naukrify-title">Naukrify</span>
+        <button class="naukrify-close" id="naukrify-close">&times;</button>
+      </div>
+      <div class="naukrify-meta">
+        <div><b>${escapeHtml(meta.company || 'Unknown company')}</b></div>
+        <div>${escapeHtml(meta.role || 'Unknown role')}</div>
+      </div>
+      <div class="naukrify-status" id="naukrify-status">Reading job description...</div>
+      <div class="naukrify-section">
+        <div class="naukrify-label">Cover letter</div>
+        <textarea class="naukrify-output" id="naukrify-cl"></textarea>
+        <div class="naukrify-issues" id="naukrify-cl-issues"></div>
+        <div class="naukrify-actions">
+          <button id="naukrify-cl-copy">Copy</button>
+          <button id="naukrify-cl-download">Download</button>
+          <button id="naukrify-cl-regen">Regenerate</button>
+        </div>
+      </div>
+      <div class="naukrify-section">
+        <div class="naukrify-label">CV summary (tailored)</div>
+        <textarea class="naukrify-output" id="naukrify-cv"></textarea>
+        <div class="naukrify-issues" id="naukrify-cv-issues"></div>
+        <div class="naukrify-actions">
+          <button id="naukrify-cv-copy">Copy</button>
+          <button id="naukrify-cv-download">Download</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(panel);
+    document.getElementById('naukrify-close').onclick = () => panel.remove();
+
+    generate(meta);
+  }
+
+  function paintIssues(el, result) {
+    if (!el) return;
+    const f = result.filter;
+    const cleaned = result.tries ? ' (auto-cleaned)' : '';
+    if (f.passed) {
+      el.textContent = '✓ ' + f.wordCount + ' words. Voice rules passed' + cleaned + '.';
+      el.className = 'naukrify-issues passed';
+    } else {
+      el.textContent = '⚠ ' + f.wordCount + ' words' + cleaned + '. Flags: ' + f.flags.join('; ');
+      el.className = 'naukrify-issues failed';
+    }
+  }
+
+  async function generate(meta) {
+    const status = document.getElementById('naukrify-status');
+    try {
+      const data = await chrome.storage.local.get(['geminiKey','masterCv','voiceNotes']);
+      if (!data.geminiKey) {
+        status.textContent = 'Paste your Gemini API key in the toolbar popup first.';
+        return;
+      }
+      if (!data.masterCv) {
+        status.textContent = 'Paste your master CV in the toolbar popup first.';
+        return;
+      }
+      const jd = extractJD();
+      if (!jd || jd.length < 200) {
+        status.textContent = 'Could not read the job description. Scroll the page so it loads, then click Regenerate.';
+        return;
+      }
+
+      status.textContent = 'Generating cover letter...';
+      const clOpts = { minWords: 80, maxWords: 160, maxRetries: 1 };
+      const clResult = await generateClean(data.geminiKey, coverLetterPrompt(jd, data.masterCv, data.voiceNotes), clOpts);
+      document.getElementById('naukrify-cl').value = clResult.text;
+      paintIssues(document.getElementById('naukrify-cl-issues'), clResult);
+
+      // The CV is a separate API call. Isolate its errors so a failure here
+      // (e.g. a rate limit) shows a clear message instead of silently leaving
+      // the CV box empty behind an already-rendered cover letter.
+      status.textContent = 'Tailoring CV summary...';
+      const cvIssuesEl = document.getElementById('naukrify-cv-issues');
+      try {
+        const cvOpts = { minWords: 55, maxWords: 100, maxRetries: 1 };
+        const cvResult = await generateClean(data.geminiKey, cvTailorPrompt(jd, data.masterCv), cvOpts);
+        document.getElementById('naukrify-cv').value = cvResult.text;
+        paintIssues(cvIssuesEl, cvResult);
+        status.textContent = 'Done. Review before sending.';
+      } catch (cvErr) {
+        if (cvIssuesEl) {
+          cvIssuesEl.textContent = '⚠ CV summary failed: ' + (cvErr.message || String(cvErr)) + ' — click Regenerate.';
+          cvIssuesEl.className = 'naukrify-issues failed';
+        }
+        status.textContent = 'Cover letter done. CV summary failed (see below).';
+      }
+
+      const clEl = document.getElementById('naukrify-cl');
+      const cvEl = document.getElementById('naukrify-cv');
+      const filenameBase = slugify(meta.company) + '__' + slugify(meta.role);
+
+      document.getElementById('naukrify-cl-copy').onclick = () => navigator.clipboard.writeText(clEl.value);
+      document.getElementById('naukrify-cv-copy').onclick = () => navigator.clipboard.writeText(cvEl.value);
+      document.getElementById('naukrify-cl-download'

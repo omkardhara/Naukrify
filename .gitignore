@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+web/.next/
+web/out/
+
+# Environment files — never commit real keys
+.env.local
+.env.*.local
+web/.env.local
+web/.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.swp
+
+# Chrome extension unpacked build artifacts
+extension/*.crx
+extension/*.pem

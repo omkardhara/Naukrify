@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <h1>Naukrify settings</h1>
+
+  <!-- ── Account sync (Slice 1 dev helper) ─────────────────────────────── -->
+  <div class="section sync-section">
+    <label>Account token <span class="badge">Slice 1</span></label>
+    <div class="token-row">
+      <input type="password" id="token" placeholder="Paste token from web app dashboard">
+      <button id="sync">Sync</button>
+    </div>
+    <div class="hint">
+      Open the
+      <a href="https://app.naukrify.com/dashboard" target="_blank" rel="noopener">web app dashboard</a>,
+      click "Show" next to Extension sync token, copy it, paste above, click Sync.
+    </div>
+    <span id="sync-status"></span>
+  </div>
+  <!-- ──────────────────────────────────────────────────────────────────── -->
+
+  <!-- ── Role tilt ─────────────────────────────────────────────────────── -->
+  <div class="section">
+    <label for="variant">Role tilt</label>
+    <select id="variant">
+      <option value="">No tilt (master CV)</option>
+    </select>
+    <div class="hint" id="variant-hint">Sync your account to load tilts.</div>
+  </div>
+  <!-- ──────────────────────────────────────────────────────────────────── -->
+
+  <div class="section">
+    <label for="key">Gemini API key</label>
+    <input type="password" id="key" placeholder="AIza...">
+    <div class="hint">
+      Free. Get one at
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com/app/apikey</a>.
+      Add billing in Google Cloud Console for up to 1,500 req/day.
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <label for="name">Name</label>
+      <input type="text" id="name">
+    </div>
+    <div class="col">
+      <label for="phone">Phone</label>
+      <input type="text" id="phone">
+    </div>
+  </div>
+
+  <div class="section">
+    <label for="email">Email</label>
+    <input type="email" id="email">
+  </div>
+
+  <div class="section">
+    <label for="cv">Master CV (plain text)</label>
+    <textarea id="cv" rows="10" placeholder="Paste your master CV in plain text. Include contact, summary, experience with achievements and specific numbers, skills, education."></textarea>
+  </div>
+
+  <div class="section">
+    <label for="voice">Voice notes (optional)</label>
+    <textarea id="voice" rows="4" placeholder="How you write. Example: 'no em-dashes, cool tone, India context first, avoid leverage / holistic / transformative.'"></textarea>
+  </div>
+
+  <button id="save">Save</button>
+  <span id="status"></span>
+
+  <div class="footer">
+    Go to a LinkedIn job page and click the "Tailor with AI" button.
+  </div>
+
+  <script src="lib/config.js"></script>
+  <script src="lib/sync.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
