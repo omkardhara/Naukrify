@@ -349,7 +349,7 @@ Output ONLY the corrected text. No preamble, no explanation.`;
                 '🔒 Free trial used up (10/10). ' +
                 '<a href="' + NAUKRIFY_CONFIG.webAppUrl + '/dashboard" target="_blank" ' +
                 'style="color:#4f46e5;text-decoration:underline">' +
-                'Get full access — ₹999</a>';
+                'Get full access — ₹499</a>';
               return;
             }
             if (usage.reason === 'daily_limit') {

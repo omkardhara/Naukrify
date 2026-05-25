@@ -5,6 +5,7 @@ import DashboardTabs from '@/components/DashboardTabs'
 import GeminiDisclaimer from '@/components/GeminiDisclaimer'
 import TrialBanner from '@/components/TrialBanner'
 import TokenDisplay from '@/components/TokenDisplay'
+import OnboardingBanner from '@/components/OnboardingBanner'
 
 export default async function Dashboard() {
   const supabase = await createClient()
@@ -49,6 +50,7 @@ export default async function Dashboard() {
         </div>
 
         <div className="space-y-4 mb-8">
+          <OnboardingBanner hasCv={!!(profile?.master_cv && profile.master_cv.trim().length > 50)} />
           <TrialBanner
             isPaid={isPaid}
             paidUntil={paidUntil}

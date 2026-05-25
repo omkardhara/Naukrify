@@ -45,6 +45,10 @@ export default function PdfUpload({ onExtracted }: Props) {
       setStatus('error')
       return
     }
+    if (file.size > 5 * 1024 * 1024) {
+      setStatus('error')
+      return
+    }
     setStatus('extracting')
     try {
       const text = await extractTextFromPdf(file)
@@ -117,7 +121,7 @@ export default function PdfUpload({ onExtracted }: Props) {
           </span>
         )}
         <span className="text-xs text-gray-400">
-          Text-based PDFs only — exported from Word or Google Docs
+          Text-based PDFs only. Max 5 MB. Exported from Word or Google Docs.
         </span>
       </label>
       <input
