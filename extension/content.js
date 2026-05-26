@@ -58,6 +58,26 @@
 
   // ===== Prompts =====
 
+  function recruiterReplyPrompt(recruiterMsg, cv, jobTitle, company) {
+    const context = (jobTitle || company) ? `Role: ${jobTitle || 'unspecified'} at ${company || 'unspecified'}\n\n` : '';
+    return `Draft a brief, professional reply to a recruiter's message. 60-90 words. Warm but not gushing. Confirm interest, ask one sharp clarifying question (comp range, team size, or what problem the role solves). Sign off professionally.
+
+${context}RECRUITER MESSAGE:
+${recruiterMsg}
+
+CANDIDATE CV (brief reference only):
+${cv.slice(0, 3000)}
+
+RULES:
+- 60-90 words max
+- No em-dashes. No banned vocab (leverage, synergy, etc.)
+- One paragraph or two very short ones
+- End with a clear ask (call time, more info, etc.)
+- NEVER invent experience or skills
+
+Output ONLY the reply text. No subject line. No preamble.`;
+  }
+
   function coverLetterPrompt(jd, cv, voiceNotes, variantTilt) {
     const tiltBlock  = variantTilt  ? `\n\nROLE TILT — angle the letter specifically for this type of role:\n${variantTilt}` : '';
     const voiceBlock = voiceNotes   ? `\n\nVOICE NOTES (apply if relevant):\n${voiceNotes}` : '';
@@ -408,6 +428,30 @@ Output ONLY the corrected text. No preamble, no explanation.`;
           <button id="naukrify-cv-download">Download</button>
         </div>
       </div>
+      <div class="naukrify-section naukrify-reply-section">
+        <details>
+          <summary class="naukrify-label" style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;">
+            <span style="font-size:10px;opacity:0.6;">&#9654;</span> Draft recruiter reply
+          </summary>
+          <div style="margin-top:8px;">
+            <textarea
+              id="naukrify-recruiter-msg"
+              class="naukrify-output"
+              rows="4"
+              placeholder="Paste the recruiter's message here..."
+              style="height:80px;"
+            ></textarea>
+            <div class="naukrify-actions" style="margin-top:6px;">
+              <button id="naukrify-reply-gen">Generate reply</button>
+            </div>
+            <div class="naukrify-issues" id="naukrify-reply-status"></div>
+            <textarea class="naukrify-output" id="naukrify-reply-out" style="display:none;margin-top:6px;"></textarea>
+            <div class="naukrify-actions" id="naukrify-reply-actions" style="display:none;">
+              <button id="naukrify-reply-copy">Copy reply</button>
+            </div>
+          </div>
+        </details>
+      </div>
     `;
     document.body.appendChild(panel);
     document.getElementById('naukrify-close').onclick = () => panel.remove();
@@ -526,6 +570,28 @@ Output ONLY the corrected text. No preamble, no explanation.`;
       document.getElementById('naukrify-cl-download').onclick = () => downloadRtf(clEl.value, filenameBase + '__cover-letter.rtf');
       document.getElementById('naukrify-cv-download').onclick = () => downloadRtf(cvEl.value, filenameBase + '__cv-summary.rtf');
       document.getElementById('naukrify-cl-regen').onclick = () => generate(meta);
+
+      // ── Recruiter reply ──────────────────────────────────────────────────
+      document.getElementById('naukrify-reply-gen').onclick = async () => {
+        const msg = (document.getElementById('naukrify-recruiter-msg').value || '').trim();
+        const statusEl  = document.getElementById('naukrify-reply-status');
+        const outEl     = document.getElementById('naukrify-reply-out');
+        const actionsEl = document.getElementById('naukrify-reply-actions');
+        if (!msg) { statusEl.textContent = 'Paste a recruiter message first.'; return; }
+        statusEl.textContent = 'Drafting reply...';
+        outEl.style.display     = 'none';
+        actionsEl.style.display = 'none';
+        try {
+          const reply = await callGemini(data.geminiKey, recruiterReplyPrompt(msg, data.masterCv, meta.role, meta.company));
+          outEl.value             = reply;
+          outEl.style.display     = '';
+          actionsEl.style.display = '';
+          statusEl.textContent    = '';
+          document.getElementById('naukrify-reply-copy').onclick = () => navigator.clipboard.writeText(reply);
+        } catch (e) {
+          statusEl.textContent = 'Failed: ' + (e.message || String(e));
+        }
+      };
     } catch (err) {
       status.textContent = 'Error: ' + (err.message || String(err));
     }

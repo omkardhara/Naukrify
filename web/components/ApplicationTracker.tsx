@@ -3,6 +3,32 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
+function downloadCsv(apps: Application[]) {
+  const headers = ['Company', 'Role', 'Status', 'Source', 'Date', 'Job URL', 'Notes']
+  const esc = (s: string | null) => {
+    if (!s) return ''
+    const str = String(s).replace(/"/g, '""')
+    return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str}"` : str
+  }
+  const rows = apps.map((a) => [
+    esc(a.company),
+    esc(a.role_title),
+    esc(a.status),
+    esc(a.source),
+    esc(new Date(a.created_at).toLocaleDateString('en-IN')),
+    esc(a.job_url),
+    esc(a.notes),
+  ].join(','))
+  const csv = [headers.join(','), ...rows].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `naukrify-applications-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 function downloadRtf(text: string, filename: string) {
   let rtfBody = ''
   for (let i = 0; i < text.length; i++) {
@@ -129,24 +155,33 @@ export default function ApplicationTracker({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-8">
-      {/* Pipeline summary */}
-      <div className="flex gap-4 text-center text-sm">
-        <div className="flex-1 bg-gray-50 rounded-lg py-3">
-          <p className="text-2xl font-bold text-gray-900">{apps.length}</p>
-          <p className="text-xs text-gray-500 mt-0.5">Total</p>
+      {/* Pipeline summary + export */}
+      <div className="flex items-end gap-3">
+        <div className="flex gap-3 flex-1 text-center text-sm">
+          <div className="flex-1 bg-gray-50 rounded-lg py-3">
+            <p className="text-2xl font-bold text-gray-900">{apps.length}</p>
+            <p className="text-xs text-gray-500 mt-0.5">Total</p>
+          </div>
+          <div className="flex-1 bg-blue-50 rounded-lg py-3">
+            <p className="text-2xl font-bold text-blue-700">{activeCount}</p>
+            <p className="text-xs text-gray-500 mt-0.5">Active</p>
+          </div>
+          <div className="flex-1 bg-purple-50 rounded-lg py-3">
+            <p className="text-2xl font-bold text-purple-700">{interviewCount}</p>
+            <p className="text-xs text-gray-500 mt-0.5">Interview</p>
+          </div>
+          <div className="flex-1 bg-green-50 rounded-lg py-3">
+            <p className="text-2xl font-bold text-green-700">{offerCount}</p>
+            <p className="text-xs text-gray-500 mt-0.5">Offered</p>
+          </div>
         </div>
-        <div className="flex-1 bg-blue-50 rounded-lg py-3">
-          <p className="text-2xl font-bold text-blue-700">{activeCount}</p>
-          <p className="text-xs text-gray-500 mt-0.5">Active</p>
-        </div>
-        <div className="flex-1 bg-purple-50 rounded-lg py-3">
-          <p className="text-2xl font-bold text-purple-700">{interviewCount}</p>
-          <p className="text-xs text-gray-500 mt-0.5">Interview</p>
-        </div>
-        <div className="flex-1 bg-green-50 rounded-lg py-3">
-          <p className="text-2xl font-bold text-green-700">{offerCount}</p>
-          <p className="text-xs text-gray-500 mt-0.5">Offered</p>
-        </div>
+        <button
+          onClick={() => downloadCsv(apps)}
+          className="shrink-0 text-xs px-3 py-1.5 border border-gray-200 text-gray-500 rounded hover:bg-gray-50 transition-colors"
+          title="Export all applications as CSV"
+        >
+          Export CSV
+        </button>
       </div>
 
       {COLUMNS.map((col) => {
