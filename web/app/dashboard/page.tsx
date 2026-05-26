@@ -61,6 +61,7 @@ export default async function Dashboard() {
             dailyGenerations={dailyGenerations}
             userEmail={user.email ?? ''}
             userName={userName}
+            stripeEnabled={!!process.env.STRIPE_SECRET_KEY}
           />
           <GeminiDisclaimer />
         </div>

@@ -1,5 +1,6 @@
 import CheckoutButton from './CheckoutButton'
 import CouponInput from './CouponInput'
+import StripeCheckoutButton from './StripeCheckoutButton'
 
 interface Props {
   isPaid:           boolean
@@ -8,6 +9,7 @@ interface Props {
   dailyGenerations: number
   userEmail:        string
   userName:         string
+  stripeEnabled?:   boolean
 }
 
 const TRIAL_TOTAL = 10
@@ -26,6 +28,7 @@ export default function TrialBanner({
   dailyGenerations,
   userEmail,
   userName,
+  stripeEnabled = false,
 }: Props) {
   const isActive = isPaid && paidUntil != null && new Date(paidUntil) > new Date()
 
@@ -45,9 +48,12 @@ export default function TrialBanner({
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <p className="text-sm font-semibold text-amber-800">Your plan expired on {formatDate(paidUntil)}</p>
-            <p className="text-xs text-gray-500 mt-0.5">Renew for another 3 months at ₹499.</p>
+            <p className="text-xs text-gray-500 mt-0.5">Renew for another 3 months.</p>
           </div>
-          <CheckoutButton userEmail={userEmail} userName={userName} />
+          <div className="flex flex-wrap gap-2">
+            <CheckoutButton userEmail={userEmail} userName={userName} />
+            {stripeEnabled && <StripeCheckoutButton />}
+          </div>
         </div>
       </div>
     )
@@ -89,12 +95,15 @@ export default function TrialBanner({
 
           {exhausted && (
             <p className="text-xs text-gray-500 mt-0.5">
-              ₹499 for 3 months. 3 applications/day.
+              ₹499 for 3 months (India) or $5.99 USD (international). 3 applications/day.
             </p>
           )}
         </div>
 
-        <CheckoutButton userEmail={userEmail} userName={userName} />
+        <div className="flex flex-wrap gap-2">
+          <CheckoutButton userEmail={userEmail} userName={userName} />
+          {stripeEnabled && <StripeCheckoutButton />}
+        </div>
       </div>
 
       <div className="h-1.5 bg-amber-100 rounded-full overflow-hidden">
