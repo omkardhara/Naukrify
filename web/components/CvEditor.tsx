@@ -8,6 +8,7 @@ interface Props {
   initialCv: string
   initialName: string
   initialPhone: string
+  onSaved?: (cv: string) => void
 }
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
@@ -17,6 +18,7 @@ export default function CvEditor({
   initialCv,
   initialName,
   initialPhone,
+  onSaved,
 }: Props) {
   const [cv, setCv] = useState(initialCv)
   const [name, setName] = useState(initialName)
@@ -40,6 +42,7 @@ export default function CvEditor({
       setStatus('error')
     } else {
       setStatus('saved')
+      onSaved?.(cv)
     }
     setTimeout(() => setStatus('idle'), 2500)
   }
