@@ -36,11 +36,18 @@ export async function POST(req: NextRequest) {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         serviceRoleKey,
       )
-      const paidUntil = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
+      // Extend from current paid_until if still active (early renewal)
+      const existing = await supabase.from('profiles').select('paid_until').eq('id', userId).maybeSingle()
+      const currentExpiry = existing.data?.paid_until
+      const baseDate = currentExpiry && new Date(currentExpiry) > new Date()
+        ? new Date(currentExpiry)
+        : new Date()
+      const paidUntilDate = new Date(baseDate)
+      paidUntilDate.setDate(paidUntilDate.getDate() + 90)
       const { error } = await supabase.from('profiles').update({
         is_paid:    true,
         paid_at:    new Date().toISOString(),
-        paid_until: paidUntil,
+        paid_until: paidUntilDate.toISOString(),
       }).eq('id', userId)
       if (error) console.error('Stripe webhook DB update failed:', error.message)
     } else if (!serviceRoleKey) {

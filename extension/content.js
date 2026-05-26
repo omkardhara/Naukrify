@@ -185,8 +185,17 @@ Output ONLY the CV text. No preamble, no explanation.`;
         await sleep(6000 * (attempt + 1));
         continue;
       }
+      if (res.status === 429) {
+        throw new Error('Gemini rate limit hit. Wait a few minutes, then click Regenerate. For higher limits, add billing in Google Cloud Console (free-tier usage stays free).');
+      }
+      if (res.status === 400) {
+        throw new Error('Gemini API key invalid or missing. Check your key in the extension popup.');
+      }
+      if (res.status === 403) {
+        throw new Error('Gemini API key has no access to this model. Make sure Generative Language API is enabled in Google Cloud Console.');
+      }
       const errText = await res.text();
-      throw new Error('Gemini ' + res.status + ': ' + errText.slice(0, 250));
+      throw new Error('Gemini ' + res.status + ': ' + errText.slice(0, 200));
     }
     const json = await res.json();
     const text = json && json.candidates && json.candidates[0]
@@ -523,6 +532,14 @@ Output ONLY the corrected text. No preamble, no explanation.`;
         try {
           const usage = await checkAndIncrementUsage(data.supabaseToken);
           if (!usage.allowed) {
+            if (usage.reason === 'plan_expired') {
+              status.innerHTML =
+                '🔒 Your 3-month plan expired. ' +
+                '<a href="' + NAUKRIFY_CONFIG.webAppUrl + '/dashboard" target="_blank" ' +
+                'style="color:#4f46e5;text-decoration:underline">' +
+                'Renew — ₹499 for 3 more months</a>';
+              return;
+            }
             if (usage.reason === 'trial_exhausted') {
               status.innerHTML =
                 '🔒 Free trial used up (10/10). ' +
@@ -532,7 +549,7 @@ Output ONLY the corrected text. No preamble, no explanation.`;
               return;
             }
             if (usage.reason === 'daily_limit') {
-              status.textContent = 'Daily limit reached (3/day on free trial). Resets at 1:30 PM IST tomorrow.';
+              status.textContent = 'Daily limit reached (3/day on free trial). Resets tomorrow.';
               return;
             }
             // not_authenticated / no_profile — allow but warn

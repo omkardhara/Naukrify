@@ -28,7 +28,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid payment signature' }, { status: 400 })
   }
 
-  const paidUntil = new Date()
+  // Extend from current paid_until if still active, so early renewal isn't penalised
+  const existing = await supabase
+    .from('profiles')
+    .select('paid_until')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const currentExpiry = existing.data?.paid_until
+  const baseDate = currentExpiry && new Date(currentExpiry) > new Date()
+    ? new Date(currentExpiry)
+    : new Date()
+  const paidUntil = new Date(baseDate)
   paidUntil.setMonth(paidUntil.getMonth() + 3)
 
   const { error } = await supabase
