@@ -54,8 +54,8 @@ export default async function Home() {
               },
               {
                 step: '2',
-                title: 'Open any LinkedIn job',
-                body: 'Click the "Tailor with AI" button. It reads the job description and your CV automatically.',
+                title: 'Open any job page',
+                body: 'Works on LinkedIn, Naukri, Wellfound, and Instahyre. Click the "Tailor with AI" button — it reads the job description and your CV automatically.',
               },
               {
                 step: '3',
@@ -78,7 +78,7 @@ export default async function Home() {
       {/* ── Features ── */}
       <section className="px-6 py-16 max-w-4xl mx-auto">
         <h2 className="text-2xl font-bold text-center mb-12">What makes it different</h2>
-        <div className="grid sm:grid-cols-3 gap-8">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             {
               icon: '📄',
@@ -93,7 +93,12 @@ export default async function Home() {
             {
               icon: '📊',
               title: 'Application tracker',
-              body: 'Every generation is logged automatically. Move applications from Drafted to Offered. All in one place.',
+              body: 'Every generation is logged automatically. Move applications from Drafted to Offered. Notes and CSV export included.',
+            },
+            {
+              icon: '💬',
+              title: 'Recruiter reply drafts',
+              body: 'Paste a recruiter message into the extension panel. Get a 60-word professional reply with one sharp clarifying question.',
             },
           ].map((f) => (
             <div key={f.title} className="rounded-xl border border-gray-100 p-6 shadow-sm">
@@ -135,7 +140,8 @@ export default async function Home() {
               '3 tailored applications per day',
               'CV summary + cover letter for each',
               'Voice-rules filter on every output',
-              'Application tracker with status pipeline',
+              'Application tracker with notes and CSV export',
+              'Recruiter reply drafts (paste message, get reply)',
               'Your own Gemini key — zero ongoing cost',
               '10 free trial applications to start',
             ].map((item) => (
@@ -151,9 +157,53 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* ── FAQ ── */}
+      <section className="bg-gray-50 px-6 py-16">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold text-center mb-10">Frequently asked questions</h2>
+          <div className="space-y-6">
+            {[
+              {
+                q: 'What is a Gemini API key and how do I get one?',
+                a: 'Google Gemini is a free AI. Go to aistudio.google.com/app/apikey, sign in with Google, and click "Create API key". Takes 2 minutes. Paste it into the Naukrify extension once and you\'re set.',
+              },
+              {
+                q: 'Does it work on Naukri and Wellfound too?',
+                a: 'Yes. The extension works on LinkedIn Jobs, Naukri, Wellfound, and Instahyre. Click the "Tailor with AI" button that appears on any job page.',
+              },
+              {
+                q: 'What happens to my CV data?',
+                a: 'Your CV text is stored encrypted in Supabase (Postgres). Only you can see it. Your Gemini API key never leaves your browser — it is never sent to our servers.',
+              },
+              {
+                q: 'Will I be charged monthly?',
+                a: 'No. ₹499 is a one-time payment for 3 months of access. After 3 months you can renew or stop. There is no auto-renewal.',
+              },
+              {
+                q: 'What if the extension doesn\'t find the job description?',
+                a: 'Scroll the full job page so it loads, then click "Regenerate" in the panel. Works for most LinkedIn, Naukri, and Wellfound job pages. Unusual page layouts may not parse correctly.',
+              },
+              {
+                q: 'Can I use my own voice or style?',
+                a: 'Yes. Add "Voice notes" in the extension popup (e.g. "cool tone, no jargon, India context"). You can also create role tilts in the web dashboard to angle the CV for different role types.',
+              },
+            ].map((item) => (
+              <div key={item.q} className="border-b border-gray-200 pb-6 last:border-0">
+                <p className="font-semibold text-gray-900 mb-2">{item.q}</p>
+                <p className="text-sm text-gray-500 leading-relaxed">{item.a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Footer ── */}
-      <footer className="border-t border-gray-100 px-6 py-8 text-center text-xs text-gray-400">
+      <footer className="border-t border-gray-100 px-6 py-8 text-center text-xs text-gray-400 space-y-2">
         <p>Naukrify — built for India job hunters. Questions? omkar@naukrify.com</p>
+        <div className="flex items-center justify-center gap-4">
+          <a href="/privacy" className="hover:text-gray-600 transition-colors">Privacy Policy</a>
+          <a href="/terms" className="hover:text-gray-600 transition-colors">Terms of Service</a>
+        </div>
       </footer>
     </div>
   )
