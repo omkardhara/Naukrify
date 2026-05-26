@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
 
-const stripeKey     = process.env.STRIPE_SECRET_KEY
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+const stripeKey       = process.env.STRIPE_SECRET_KEY
+const webhookSecret   = process.env.STRIPE_WEBHOOK_SECRET
+const serviceRoleKey  = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 // Disable body parsing — Stripe requires the raw body for signature verification
 export const runtime = 'nodejs'
@@ -27,21 +28,23 @@ export async function POST(req: NextRequest) {
   }
 
   if (event.type === 'checkout.session.completed') {
-    const session  = event.data.object as Stripe.Checkout.Session
-    const userId   = session.metadata?.user_id ?? session.client_reference_id
+    const session = event.data.object as Stripe.Checkout.Session
+    const userId  = session.metadata?.user_id ?? session.client_reference_id
 
-    if (userId) {
-      // Use service role (admin) client to bypass RLS
-      const supabase = createSupabaseAdminClient(
+    if (userId && serviceRoleKey) {
+      const supabase  = createSupabaseAdminClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        serviceRoleKey,
       )
       const paidUntil = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
-      await supabase.from('profiles').update({
+      const { error } = await supabase.from('profiles').update({
         is_paid:    true,
         paid_at:    new Date().toISOString(),
         paid_until: paidUntil,
       }).eq('id', userId)
+      if (error) console.error('Stripe webhook DB update failed:', error.message)
+    } else if (!serviceRoleKey) {
+      console.error('SUPABASE_SERVICE_ROLE_KEY not set — cannot update profile after Stripe payment')
     }
   }
 

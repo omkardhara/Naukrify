@@ -92,6 +92,9 @@ export default function ApplicationTracker({ userId }: { userId: string }) {
   const [apps, setApps] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [filterStatus, setFilterStatus] = useState<Status | 'all'>('all')
+  const [filterSource, setFilterSource] = useState<string>('all')
 
   useEffect(() => {
     const supabase = createClient()
@@ -153,6 +156,16 @@ export default function ApplicationTracker({ userId }: { userId: string }) {
   const interviewCount = apps.filter((a) => a.status === 'interview').length
   const offerCount     = apps.filter((a) => a.status === 'offered').length
 
+  const sources = Array.from(new Set(apps.map((a) => a.source))).sort()
+
+  const filtered = apps.filter((a) => {
+    const q = search.toLowerCase()
+    if (q && !`${a.company ?? ''} ${a.role_title ?? ''}`.toLowerCase().includes(q)) return false
+    if (filterStatus !== 'all' && a.status !== filterStatus) return false
+    if (filterSource !== 'all' && a.source !== filterSource) return false
+    return true
+  })
+
   return (
     <div className="space-y-8">
       {/* Pipeline summary + export */}
@@ -184,8 +197,49 @@ export default function ApplicationTracker({ userId }: { userId: string }) {
         </button>
       </div>
 
+      {/* Search + filter row */}
+      <div className="flex flex-wrap gap-2">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search company or role..."
+          className="flex-1 min-w-[160px] border border-gray-200 rounded-md px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
+        />
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value as Status | 'all')}
+          className="border border-gray-200 rounded-md px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+        >
+          <option value="all">All statuses</option>
+          {COLUMNS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+        </select>
+        {sources.length > 1 && (
+          <select
+            value={filterSource}
+            onChange={(e) => setFilterSource(e.target.value)}
+            className="border border-gray-200 rounded-md px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-400 bg-white capitalize"
+          >
+            <option value="all">All sources</option>
+            {sources.map((s) => <option key={s} value={s} className="capitalize">{s}</option>)}
+          </select>
+        )}
+        {(search || filterStatus !== 'all' || filterSource !== 'all') && (
+          <button
+            onClick={() => { setSearch(''); setFilterStatus('all'); setFilterSource('all') }}
+            className="text-xs text-gray-400 hover:text-gray-600 px-2"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
+      {filtered.length === 0 && (search || filterStatus !== 'all' || filterSource !== 'all') && (
+        <p className="text-sm text-gray-400 text-center py-4">No applications match your filters.</p>
+      )}
+
       {COLUMNS.map((col) => {
-        const colApps = apps.filter((a) => a.status === col.id)
+        const colApps = filtered.filter((a) => a.status === col.id)
         if (colApps.length === 0) return null
         return (
           <div key={col.id}>
