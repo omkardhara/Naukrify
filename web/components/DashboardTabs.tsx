@@ -91,7 +91,7 @@ export default function DashboardTabs({
       )}
 
       {tab === 'prep' && (
-        <InterviewPrep cv={liveCv || initialCv} />
+        <InterviewPrep cv={liveCv || initialCv} userId={userId} />
       )}
     </div>
   )
