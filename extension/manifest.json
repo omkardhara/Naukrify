@@ -8,6 +8,7 @@
     "https://www.linkedin.com/*",
     "https://www.naukri.com/*",
     "https://wellfound.com/*",
+    "https://www.instahyre.com/*",
     "https://generativelanguage.googleapis.com/*",
     "https://*.supabase.co/*"
   ],
@@ -20,7 +21,8 @@
       "matches": [
         "https://www.linkedin.com/jobs/*",
         "https://www.naukri.com/*",
-        "https://wellfound.com/jobs/*"
+        "https://wellfound.com/jobs/*",
+        "https://www.instahyre.com/*"
       ],
       "js": ["lib/config.js", "lib/sync.js", "content.js"],
       "css": ["content.css"],

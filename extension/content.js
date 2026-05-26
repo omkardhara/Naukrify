@@ -217,8 +217,9 @@ Output ONLY the corrected text. No preamble, no explanation.`;
 
   function currentSite() {
     const h = location.hostname;
-    if (h.includes('naukri.com'))    return 'naukri';
-    if (h.includes('wellfound.com')) return 'wellfound';
+    if (h.includes('naukri.com'))     return 'naukri';
+    if (h.includes('wellfound.com'))  return 'wellfound';
+    if (h.includes('instahyre.com'))  return 'instahyre';
     return 'linkedin';
   }
 
@@ -228,6 +229,7 @@ Output ONLY the corrected text. No preamble, no explanation.`;
     if (site === 'linkedin')   return path.startsWith('/jobs/');
     if (site === 'naukri')     return /\/(job-listings-|view\/jobs\/)/.test(path) || document.querySelector('.jd-header-title, .job-header h1') !== null;
     if (site === 'wellfound')  return path.startsWith('/jobs/');
+    if (site === 'instahyre')  return /\/(candidate\/opportunities|job-detail|jobs\/)/.test(path) || document.querySelector('.job-details, [class*="JobDetail"], [class*="job-detail"]') !== null;
     return false;
   }
 
@@ -258,6 +260,23 @@ Output ONLY the corrected text. No preamble, no explanation.`;
         '[class*="job-description"]',
         '[class*="JobDescription"]',
         '[data-test="job-description"]',
+      ];
+      for (const sel of sels) {
+        const el = document.querySelector(sel);
+        if (el && el.innerText && el.innerText.length > 100) return el.innerText.trim().slice(0, 8000);
+      }
+    }
+
+    if (site === 'instahyre') {
+      const sels = [
+        '.job-description',
+        '[class*="job-description"]',
+        '[class*="JobDescription"]',
+        '[class*="description-section"]',
+        '.jd-content',
+        '[class*="jdContent"]',
+        '[class*="job-detail"] .description',
+        '[class*="JobDetail"] .description',
       ];
       for (const sel of sels) {
         const el = document.querySelector(sel);
@@ -300,6 +319,19 @@ Output ONLY the corrected text. No preamble, no explanation.`;
     if (site === 'wellfound') {
       const roleEl    = document.querySelector('h1, [class*="title"]');
       const companyEl = document.querySelector('[class*="company"] a, [class*="Company"] a, [class*="startup"] a');
+      return {
+        role:    roleEl    ? roleEl.innerText.trim().split('\n')[0]    : '',
+        company: companyEl ? companyEl.innerText.trim().split('\n')[0] : '',
+      };
+    }
+
+    if (site === 'instahyre') {
+      const roleEl = document.querySelector(
+        'h1, [class*="position-name"], [class*="job-title"], [class*="JobTitle"]'
+      );
+      const companyEl = document.querySelector(
+        '[class*="company-name"], [class*="CompanyName"], [class*="employer-name"], [class*="company"] h2, [class*="company"] a'
+      );
       return {
         role:    roleEl    ? roleEl.innerText.trim().split('\n')[0]    : '',
         company: companyEl ? companyEl.innerText.trim().split('\n')[0] : '',

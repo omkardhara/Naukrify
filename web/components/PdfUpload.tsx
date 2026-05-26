@@ -1,16 +1,13 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 
 interface Props {
   onExtracted: (text: string) => void
 }
 
 async function extractTextFromPdf(file: File): Promise<string> {
-  // Dynamic import keeps pdf.js out of the server bundle
   const pdfjsLib = await import('pdfjs-dist')
-
-  // Serve worker from /public — copied there by the postinstall script
   pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
 
   const arrayBuffer = await file.arrayBuffer()
@@ -34,11 +31,58 @@ async function extractTextFromPdf(file: File): Promise<string> {
   return pages.join('\n\n').trim()
 }
 
-type Status = 'idle' | 'extracting' | 'done' | 'image-pdf' | 'error'
+async function extractWithGemini(file: File, apiKey: string): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer()
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            {
+              inlineData: {
+                mimeType: 'application/pdf',
+                data: base64,
+              },
+            },
+            {
+              text: 'Extract ALL text from this CV/resume exactly as it appears. Preserve structure: name, contact, summary, work experience, education, skills. Output plain text only. No commentary, no formatting changes.',
+            },
+          ],
+        }],
+        generationConfig: {
+          thinkingConfig: { thinkingBudget: 0 },
+          maxOutputTokens: 4096,
+        },
+      }),
+    }
+  )
+
+  if (res.status === 400) throw new Error('Invalid API key. Check your Gemini key and try again.')
+  if (res.status === 403) throw new Error('API key does not have access to Gemini. Check key permissions.')
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`Gemini error ${res.status}: ${body.slice(0, 200)}`)
+  }
+
+  const json = await res.json()
+  const text = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+  if (!text.trim()) throw new Error('Gemini returned no text. Try a different PDF or paste your CV manually.')
+  return text.trim()
+}
+
+type Status = 'idle' | 'extracting' | 'done' | 'image-pdf' | 'gemini-extracting' | 'error'
 
 export default function PdfUpload({ onExtracted }: Props) {
   const [status, setStatus] = useState<Status>('idle')
   const [dragging, setDragging] = useState(false)
+  const [geminiKey, setGeminiKey] = useState('')
+  const [geminiError, setGeminiError] = useState('')
+  const pendingFileRef = useRef<File | null>(null)
 
   async function handleFile(file: File) {
     if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
@@ -53,7 +97,7 @@ export default function PdfUpload({ onExtracted }: Props) {
     try {
       const text = await extractTextFromPdf(file)
       if (!text || text.replace(/\s/g, '').length < 80) {
-        // Very little text extracted = likely an image-based / Canva PDF
+        pendingFileRef.current = file
         setStatus('image-pdf')
         return
       }
@@ -62,6 +106,24 @@ export default function PdfUpload({ onExtracted }: Props) {
     } catch (err) {
       console.error('PDF extraction error:', err)
       setStatus('error')
+    }
+  }
+
+  async function handleGeminiExtract() {
+    const key = geminiKey.trim()
+    if (!key) { setGeminiError('Paste your Gemini API key first.'); return }
+    const file = pendingFileRef.current
+    if (!file) { setGeminiError('Upload a PDF first.'); return }
+
+    setGeminiError('')
+    setStatus('gemini-extracting')
+    try {
+      const text = await extractWithGemini(file, key)
+      onExtracted(text)
+      setStatus('done')
+    } catch (err) {
+      setStatus('image-pdf')
+      setGeminiError(err instanceof Error ? err.message : 'Extraction failed. Try again.')
     }
   }
 
@@ -79,17 +141,14 @@ export default function PdfUpload({ onExtracted }: Props) {
   function onFileInput(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (file) handleFile(file)
-    e.target.value = '' // allow re-selecting same file
+    e.target.value = ''
   }
 
   return (
     <div>
       <label
         htmlFor="pdf-upload"
-        onDragOver={(e) => {
-          e.preventDefault()
-          setDragging(true)
-        }}
+        onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
         className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg px-4 py-5 cursor-pointer transition-colors ${
@@ -113,16 +172,15 @@ export default function PdfUpload({ onExtracted }: Props) {
           />
         </svg>
         {status === 'extracting' ? (
-          <span className="text-sm text-indigo-600">Extracting text from PDF...</span>
+          <span className="text-sm text-indigo-600">Reading PDF...</span>
+        ) : status === 'gemini-extracting' ? (
+          <span className="text-sm text-indigo-600">Extracting with Gemini...</span>
         ) : (
           <span className="text-sm text-gray-500">
-            <span className="font-medium text-indigo-600">Upload CV as PDF</span> or drag
-            and drop
+            <span className="font-medium text-indigo-600">Upload CV as PDF</span> or drag and drop
           </span>
         )}
-        <span className="text-xs text-gray-400">
-          Text-based PDFs only. Max 5 MB. Exported from Word or Google Docs.
-        </span>
+        <span className="text-xs text-gray-400">Max 5 MB.</span>
       </label>
       <input
         id="pdf-upload"
@@ -134,19 +192,42 @@ export default function PdfUpload({ onExtracted }: Props) {
 
       {status === 'done' && (
         <p className="mt-2 text-sm text-green-600">
-          Text extracted. Review the CV field below and click Save when happy.
+          Text extracted. Review the CV below and click Save.
         </p>
       )}
-      {status === 'image-pdf' && (
-        <p className="mt-2 text-sm text-amber-700">
-          This PDF has no extractable text — it&apos;s likely a Canva export or
-          scanned document. Export your CV from Google Docs or Word as a PDF
-          instead, or paste the text directly.
-        </p>
+
+      {(status === 'image-pdf' || status === 'gemini-extracting') && (
+        <div className="mt-3 p-4 border border-amber-200 bg-amber-50 rounded-lg space-y-3">
+          <p className="text-sm text-amber-800">
+            This PDF has no extractable text (Canva export or scanned document). Use your Gemini key to read it,
+            or paste your CV as plain text below.
+          </p>
+          <div className="space-y-2">
+            <input
+              type="password"
+              value={geminiKey}
+              onChange={(e) => setGeminiKey(e.target.value)}
+              placeholder="Paste Gemini API key (AIza...)"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <p className="text-xs text-gray-400">
+              Key is used only for this extraction and not stored. Same key you use in the extension.
+            </p>
+            <button
+              onClick={handleGeminiExtract}
+              disabled={status === 'gemini-extracting'}
+              className="bg-indigo-600 text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {status === 'gemini-extracting' ? 'Extracting...' : 'Extract with Gemini'}
+            </button>
+            {geminiError && <p className="text-xs text-red-600">{geminiError}</p>}
+          </div>
+        </div>
       )}
+
       {status === 'error' && (
         <p className="mt-2 text-sm text-red-600">
-          Could not read this file. Try a different PDF or paste your CV as text.
+          Could not read this file. Must be a PDF under 5 MB. Try a different file or paste your CV as text.
         </p>
       )}
     </div>
