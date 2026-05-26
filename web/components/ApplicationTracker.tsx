@@ -145,7 +145,7 @@ export default function ApplicationTracker({ userId }: { userId: string }) {
       <div className="text-center py-12 text-gray-400">
         <p className="text-base font-medium mb-1">No applications yet</p>
         <p className="text-sm">
-          Use the extension on a LinkedIn, Naukri, Wellfound, or Instahyre job page to tailor
+          Use the extension on a LinkedIn, Naukri, Wellfound, Instahyre, or Hirect job page to tailor
           your CV. Each generation is logged here automatically.
         </p>
       </div>
@@ -339,15 +339,31 @@ function AppCard({ app, expanded, onToggle, onMove, onReject, onDelete, onSaveNo
               <p className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">
                 {app.cover_letter}
               </p>
-              <button
-                className="mt-1 text-xs text-indigo-600 hover:underline"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  navigator.clipboard.writeText(app.cover_letter!)
-                }}
-              >
-                Copy
-              </button>
+              <div className="mt-1 flex gap-3">
+                <button
+                  className="text-xs text-indigo-600 hover:underline"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    navigator.clipboard.writeText(app.cover_letter!)
+                  }}
+                >
+                  Copy
+                </button>
+                <button
+                  className="text-xs text-indigo-600 hover:underline"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const slug = (s: string | null) =>
+                      (s ?? 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+                    downloadRtf(
+                      app.cover_letter!,
+                      `${slug(app.company)}__${slug(app.role_title)}__cover-letter.rtf`,
+                    )
+                  }}
+                >
+                  Download RTF
+                </button>
+              </div>
             </div>
           )}
 

@@ -79,8 +79,8 @@ export default function OnboardingBanner({ hasCv }: Props) {
           <div>
             <p className="text-sm font-medium text-indigo-900">Open any job page and click Tailor with AI</p>
             <p className="text-xs text-indigo-700 mt-0.5 leading-relaxed">
-              Works on LinkedIn, Naukri, Wellfound, and Instahyre. Get a tailored CV summary and
-              130-word cover letter in under 30 seconds. Paste the recruiter message to get a reply draft too.
+              Works on LinkedIn, Naukri, Wellfound, Instahyre, and Hirect. Get a tailored CV summary and
+              130-word cover letter in under 30 seconds. Paste a recruiter message to get a reply draft too.
             </p>
           </div>
         </li>
