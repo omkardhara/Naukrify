@@ -81,25 +81,63 @@ async function logApplication(accessToken, payload) { // eslint-disable-line no-
   } catch (_) { return; } // malformed token — skip silently
   if (!userId) return;
 
-  await fetch(`${supabaseUrl}/rest/v1/applications`, {
-    method:  'POST',
-    headers: {
-      apikey:         supabaseAnonKey,
-      Authorization:  `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      Prefer:         'return=minimal',
-    },
-    body: JSON.stringify({
-      user_id:      userId,
-      company:      payload.company      || null,
-      role_title:   payload.roleTitle    || null,
-      job_url:      payload.jobUrl       || null,
-      source:       payload.source       || 'linkedin',
-      cover_letter: payload.coverLetter  || null,
-      cv_summary:   payload.cvSummary    || null,
-      status:       'drafted',
-    }),
-  });
+  const jobUrl = payload.jobUrl || null;
+
+  // Check for an existing row with the same job URL so we update rather than duplicate.
+  let existingId = null;
+  if (jobUrl) {
+    try {
+      const checkRes = await fetch(
+        `${supabaseUrl}/rest/v1/applications?user_id=eq.${encodeURIComponent(userId)}&job_url=eq.${encodeURIComponent(jobUrl)}&select=id&limit=1`,
+        {
+          headers: {
+            apikey:        supabaseAnonKey,
+            Authorization: `Bearer ${accessToken}`,
+            Accept:        'application/json',
+          },
+        }
+      );
+      if (checkRes.ok) {
+        const rows = await checkRes.json();
+        if (rows && rows.length > 0) existingId = rows[0].id;
+      }
+    } catch (_) { /* swallow — fall through to INSERT */ }
+  }
+
+  const body = {
+    company:      payload.company     || null,
+    role_title:   payload.roleTitle   || null,
+    job_url:      jobUrl,
+    source:       payload.source      || 'linkedin',
+    cover_letter: payload.coverLetter || null,
+    cv_summary:   payload.cvSummary   || null,
+  };
+
+  if (existingId) {
+    // PATCH — update cover letter and CV on the existing row; preserve status
+    await fetch(`${supabaseUrl}/rest/v1/applications?id=eq.${existingId}`, {
+      method:  'PATCH',
+      headers: {
+        apikey:         supabaseAnonKey,
+        Authorization:  `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        Prefer:         'return=minimal',
+      },
+      body: JSON.stringify(body),
+    });
+  } else {
+    // INSERT new row
+    await fetch(`${supabaseUrl}/rest/v1/applications`, {
+      method:  'POST',
+      headers: {
+        apikey:         supabaseAnonKey,
+        Authorization:  `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        Prefer:         'return=minimal',
+      },
+      body: JSON.stringify({ ...body, user_id: userId, status: 'drafted' }),
+    });
+  }
   // Errors are intentionally swallowed — logging must not block generation UX.
 }
 

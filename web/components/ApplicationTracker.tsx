@@ -34,6 +34,7 @@ interface Application {
   source: string
   cover_letter: string | null
   cv_summary: string | null
+  notes: string | null
   status: Status
   created_at: string
 }
@@ -70,7 +71,7 @@ export default function ApplicationTracker({ userId }: { userId: string }) {
     const supabase = createClient()
     supabase
       .from('applications')
-      .select('id,company,role_title,job_url,source,cover_letter,cv_summary,status,created_at')
+      .select('id,company,role_title,job_url,source,cover_letter,cv_summary,notes,status,created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
@@ -88,6 +89,12 @@ export default function ApplicationTracker({ userId }: { userId: string }) {
     if (!error) {
       setApps((prev) => prev.map((a) => (a.id === appId ? { ...a, status: next } : a)))
     }
+  }
+
+  async function saveNotes(appId: string, notes: string) {
+    const supabase = createClient()
+    await supabase.from('applications').update({ notes }).eq('id', appId)
+    setApps((prev) => prev.map((a) => (a.id === appId ? { ...a, notes } : a)))
   }
 
   async function markRejected(appId: string) {
@@ -109,15 +116,39 @@ export default function ApplicationTracker({ userId }: { userId: string }) {
       <div className="text-center py-12 text-gray-400">
         <p className="text-base font-medium mb-1">No applications yet</p>
         <p className="text-sm">
-          Use the extension on a LinkedIn job page to tailor your CV. Each generation is
-          logged here automatically.
+          Use the extension on a LinkedIn, Naukri, Wellfound, or Instahyre job page to tailor
+          your CV. Each generation is logged here automatically.
         </p>
       </div>
     )
   }
 
+  const activeCount    = apps.filter((a) => !['rejected','offered'].includes(a.status)).length
+  const interviewCount = apps.filter((a) => a.status === 'interview').length
+  const offerCount     = apps.filter((a) => a.status === 'offered').length
+
   return (
     <div className="space-y-8">
+      {/* Pipeline summary */}
+      <div className="flex gap-4 text-center text-sm">
+        <div className="flex-1 bg-gray-50 rounded-lg py-3">
+          <p className="text-2xl font-bold text-gray-900">{apps.length}</p>
+          <p className="text-xs text-gray-500 mt-0.5">Total</p>
+        </div>
+        <div className="flex-1 bg-blue-50 rounded-lg py-3">
+          <p className="text-2xl font-bold text-blue-700">{activeCount}</p>
+          <p className="text-xs text-gray-500 mt-0.5">Active</p>
+        </div>
+        <div className="flex-1 bg-purple-50 rounded-lg py-3">
+          <p className="text-2xl font-bold text-purple-700">{interviewCount}</p>
+          <p className="text-xs text-gray-500 mt-0.5">Interview</p>
+        </div>
+        <div className="flex-1 bg-green-50 rounded-lg py-3">
+          <p className="text-2xl font-bold text-green-700">{offerCount}</p>
+          <p className="text-xs text-gray-500 mt-0.5">Offered</p>
+        </div>
+      </div>
+
       {COLUMNS.map((col) => {
         const colApps = apps.filter((a) => a.status === col.id)
         if (colApps.length === 0) return null
@@ -142,6 +173,7 @@ export default function ApplicationTracker({ userId }: { userId: string }) {
                   }}
                   onReject={() => markRejected(app.id)}
                   onDelete={() => deleteApp(app.id)}
+                  onSaveNotes={(notes) => saveNotes(app.id, notes)}
                 />
               ))}
             </div>
@@ -159,13 +191,20 @@ interface CardProps {
   onMove: () => void
   onReject: () => void
   onDelete: () => void
+  onSaveNotes: (notes: string) => void
 }
 
-function AppCard({ app, expanded, onToggle, onMove, onReject, onDelete }: CardProps) {
+function AppCard({ app, expanded, onToggle, onMove, onReject, onDelete, onSaveNotes }: CardProps) {
   const next = STATUS_MOVES[app.status]
-  const nextLabel = next
-    ? COLUMNS.find((c) => c.id === next)?.label
-    : null
+  const nextLabel = next ? COLUMNS.find((c) => c.id === next)?.label : null
+  const [notes, setNotes] = useState(app.notes ?? '')
+  const [notesSaving, setNotesSaving] = useState(false)
+
+  async function handleSaveNotes() {
+    setNotesSaving(true)
+    await onSaveNotes(notes)
+    setNotesSaving(false)
+  }
 
   return (
     <div className="border border-gray-200 rounded-lg bg-white">
@@ -256,6 +295,25 @@ function AppCard({ app, expanded, onToggle, onMove, onReject, onDelete }: CardPr
               </div>
             </div>
           )}
+
+          {/* Notes */}
+          <div onClick={(e) => e.stopPropagation()}>
+            <p className="text-xs font-medium text-gray-500 mb-1">Notes</p>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              placeholder="Interview notes, contacts at the company, follow-up dates..."
+              className="w-full border border-gray-200 rounded-md px-3 py-2 text-xs text-gray-700 outline-none focus:ring-2 focus:ring-indigo-400 resize-y"
+            />
+            <button
+              onClick={handleSaveNotes}
+              disabled={notesSaving || notes === (app.notes ?? '')}
+              className="mt-1 text-xs text-indigo-600 hover:underline disabled:opacity-40"
+            >
+              {notesSaving ? 'Saving...' : 'Save notes'}
+            </button>
+          </div>
 
           <div className="flex flex-wrap gap-2 pt-1">
             {nextLabel && (

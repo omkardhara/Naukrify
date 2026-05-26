@@ -33,7 +33,8 @@ export async function middleware(request: NextRequest) {
   // Redirect unauthenticated users away from protected routes
   const isProtected =
     request.nextUrl.pathname.startsWith('/dashboard') ||
-    request.nextUrl.pathname.startsWith('/settings')
+    request.nextUrl.pathname.startsWith('/settings') ||
+    request.nextUrl.pathname.startsWith('/admin')
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone()
