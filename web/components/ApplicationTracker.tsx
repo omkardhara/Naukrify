@@ -180,6 +180,7 @@ function AppCard({ app, expanded, onToggle, onMove, onReject, onDelete }: CardPr
           <p className="text-xs text-gray-500 truncate">{app.role_title || 'Unknown role'}</p>
         </div>
         <div className="flex items-center gap-3 ml-4 shrink-0">
+          <span className="text-xs text-gray-400 capitalize">{app.source}</span>
           <span className="text-xs text-gray-400">{formatDate(app.created_at)}</span>
           <svg
             className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}

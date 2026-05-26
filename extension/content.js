@@ -213,9 +213,59 @@ Output ONLY the corrected text. No preamble, no explanation.`;
     return { text: raw, filter: filt, tries };
   }
 
+  // ===== Site detection =====
+
+  function currentSite() {
+    const h = location.hostname;
+    if (h.includes('naukri.com'))    return 'naukri';
+    if (h.includes('wellfound.com')) return 'wellfound';
+    return 'linkedin';
+  }
+
+  function isJobPage() {
+    const site = currentSite();
+    const path = location.pathname;
+    if (site === 'linkedin')   return path.startsWith('/jobs/');
+    if (site === 'naukri')     return /\/(job-listings-|view\/jobs\/)/.test(path) || document.querySelector('.jd-header-title, .job-header h1') !== null;
+    if (site === 'wellfound')  return path.startsWith('/jobs/');
+    return false;
+  }
+
   // ===== DOM extraction =====
 
   function extractJD() {
+    const site = currentSite();
+
+    if (site === 'naukri') {
+      const sels = [
+        '.dang-inner-html',
+        '.job-desc .dang-inner-html',
+        '.jobDescSection .dang-inner-html',
+        '.job-description .dang-inner-html',
+        '[class*="job-desc"] .dang-inner-html',
+        '.job-description',
+        '[class*="jobDesc"]',
+      ];
+      for (const sel of sels) {
+        const el = document.querySelector(sel);
+        if (el && el.innerText && el.innerText.length > 100) return el.innerText.trim().slice(0, 8000);
+      }
+    }
+
+    if (site === 'wellfound') {
+      const sels = [
+        '.prose',
+        '[class*="job-description"]',
+        '[class*="JobDescription"]',
+        '[data-test="job-description"]',
+      ];
+      for (const sel of sels) {
+        const el = document.querySelector(sel);
+        if (el && el.innerText && el.innerText.length > 100) return el.innerText.trim().slice(0, 8000);
+      }
+    }
+
+    // LinkedIn (default)
     const sels = [
       '.jobs-description-content__text',
       '.jobs-box__html-content',
@@ -232,12 +282,37 @@ Output ONLY the corrected text. No preamble, no explanation.`;
   }
 
   function extractCompanyAndRole() {
+    const site = currentSite();
+
+    if (site === 'naukri') {
+      const roleEl = document.querySelector(
+        '.jd-header-title, h1.title, [class*="jdHeader"] h1, .job-header h1'
+      );
+      const companyEl = document.querySelector(
+        '.jd-header-comp-name a, .jd-header-comp-name, [class*="comp-name"] a, [class*="compName"]'
+      );
+      return {
+        role:    roleEl    ? roleEl.innerText.trim().split('\n')[0]    : '',
+        company: companyEl ? companyEl.innerText.trim().split('\n')[0] : '',
+      };
+    }
+
+    if (site === 'wellfound') {
+      const roleEl    = document.querySelector('h1, [class*="title"]');
+      const companyEl = document.querySelector('[class*="company"] a, [class*="Company"] a, [class*="startup"] a');
+      return {
+        role:    roleEl    ? roleEl.innerText.trim().split('\n')[0]    : '',
+        company: companyEl ? companyEl.innerText.trim().split('\n')[0] : '',
+      };
+    }
+
+    // LinkedIn
     const roleEl = document.querySelector('.job-details-jobs-unified-top-card__job-title, .jobs-unified-top-card__job-title, h1');
     const companyEl = document.querySelector(
       '.job-details-jobs-unified-top-card__company-name a, .jobs-unified-top-card__company-name, [class*="company-name"] a, [class*="company-name"]'
     );
     return {
-      role: roleEl ? roleEl.innerText.trim().split('\n')[0] : '',
+      role:    roleEl    ? roleEl.innerText.trim().split('\n')[0]    : '',
       company: companyEl ? companyEl.innerText.trim().split('\n')[0] : '',
     };
   }
@@ -256,7 +331,7 @@ Output ONLY the corrected text. No preamble, no explanation.`;
 
   function injectButton() {
     if (document.getElementById(BUTTON_ID)) return;
-    if (!location.pathname.startsWith('/jobs/')) return;
+    if (!isJobPage()) return;
     const btn = document.createElement('button');
     btn.id = BUTTON_ID;
     btn.className = 'naukrify-fab';
@@ -408,6 +483,7 @@ Output ONLY the corrected text. No preamble, no explanation.`;
           company:      meta.company,
           roleTitle:    meta.role,
           jobUrl:       window.location.href,
+          source:       currentSite(),
           coverLetter:  clEl.value,
           cvSummary:    cvEl.value,
         }).catch(() => {}); // swallow network errors

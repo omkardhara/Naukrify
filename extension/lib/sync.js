@@ -94,7 +94,7 @@ async function logApplication(accessToken, payload) { // eslint-disable-line no-
       company:      payload.company      || null,
       role_title:   payload.roleTitle    || null,
       job_url:      payload.jobUrl       || null,
-      source:       'linkedin',
+      source:       payload.source       || 'linkedin',
       cover_letter: payload.coverLetter  || null,
       cv_summary:   payload.cvSummary    || null,
       status:       'drafted',

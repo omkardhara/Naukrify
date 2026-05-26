@@ -6,6 +6,8 @@
   "permissions": ["storage", "activeTab"],
   "host_permissions": [
     "https://www.linkedin.com/*",
+    "https://www.naukri.com/*",
+    "https://wellfound.com/*",
     "https://generativelanguage.googleapis.com/*",
     "https://*.supabase.co/*"
   ],
@@ -15,7 +17,11 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.linkedin.com/jobs/*"],
+      "matches": [
+        "https://www.linkedin.com/jobs/*",
+        "https://www.naukri.com/*",
+        "https://wellfound.com/jobs/*"
+      ],
       "js": ["lib/config.js", "lib/sync.js", "content.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
