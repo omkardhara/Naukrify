@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Naukrify (V0)",
-  "version": "0.0.1",
-  "description": "AI tailored CV summary + cover letter for India job hunters. Bring your own Gemini key. Zero cost after install.",
+  "name": "Naukrify",
+  "version": "0.1.0",
+  "description": "AI-tailored CV summaries and cover letters for India job hunters. Works on LinkedIn, Naukri, Wellfound, and Instahyre. Bring your own free Gemini key.",
   "permissions": ["storage", "activeTab"],
   "host_permissions": [
     "https://www.linkedin.com/*",

@@ -10,5 +10,5 @@
 const NAUKRIFY_CONFIG = {
   supabaseUrl:     'https://upznqkpvikhcrgevkmgc.supabase.co',
   supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwem5xa3B2aWtoY3JnZXZrbWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0MDgwMzUsImV4cCI6MjA5NDk4NDAzNX0.QLHeisCW0L7_anhu3QKyUBaoAxY1E_nUhTUmRP8L1TM',
-  webAppUrl:       'http://localhost:3000', // change to production URL when deploying
+  webAppUrl:       'https://naukrify.com', // update to your Vercel URL if not using a custom domain
 };
