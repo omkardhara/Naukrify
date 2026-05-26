@@ -16,8 +16,9 @@ export default function GeminiDisclaimer() {
         />
       </svg>
       <p>
-        <strong>Gemini API daily limit:</strong> Without billing, the free tier
-        allows ~20 requests/day. Add a payment method in{' '}
+        <strong>Gemini free tier:</strong> 1,500 requests/day — enough for 500+
+        job applications. No billing setup needed. If you hit the daily cap, it
+        resets at 1:30 PM IST. Add a payment method in{' '}
         <a
           href="https://console.cloud.google.com"
           target="_blank"
@@ -26,8 +27,7 @@ export default function GeminiDisclaimer() {
         >
           Google Cloud Console
         </a>{' '}
-        to unlock up to 1,500 requests/day. You won&apos;t be charged for
-        free-tier usage. Quota resets at 1:30 PM IST daily.
+        to get much higher limits without any charge on free-tier usage.
       </p>
     </div>
   )

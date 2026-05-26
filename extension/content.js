@@ -240,6 +240,7 @@ Output ONLY the corrected text. No preamble, no explanation.`;
     if (h.includes('naukri.com'))     return 'naukri';
     if (h.includes('wellfound.com'))  return 'wellfound';
     if (h.includes('instahyre.com'))  return 'instahyre';
+    if (h.includes('hirect.in'))      return 'hirect';
     return 'linkedin';
   }
 
@@ -250,6 +251,7 @@ Output ONLY the corrected text. No preamble, no explanation.`;
     if (site === 'naukri')     return /\/(job-listings-|view\/jobs\/)/.test(path) || document.querySelector('.jd-header-title, .job-header h1') !== null;
     if (site === 'wellfound')  return path.startsWith('/jobs/');
     if (site === 'instahyre')  return /\/(candidate\/opportunities|job-detail|jobs\/)/.test(path) || document.querySelector('.job-details, [class*="JobDetail"], [class*="job-detail"]') !== null;
+    if (site === 'hirect')     return /\/(job|jobs)\//.test(path) || document.querySelector('[class*="job-detail"], [class*="JobDetail"]') !== null;
     return false;
   }
 
@@ -297,6 +299,23 @@ Output ONLY the corrected text. No preamble, no explanation.`;
         '[class*="jdContent"]',
         '[class*="job-detail"] .description',
         '[class*="JobDetail"] .description',
+      ];
+      for (const sel of sels) {
+        const el = document.querySelector(sel);
+        if (el && el.innerText && el.innerText.length > 100) return el.innerText.trim().slice(0, 8000);
+      }
+    }
+
+    if (site === 'hirect') {
+      const sels = [
+        '.job-description',
+        '[class*="job-description"]',
+        '[class*="JobDescription"]',
+        '[class*="jobDescription"]',
+        '.description',
+        '[class*="job-detail"] .description',
+        '[class*="JobDetail"] .description',
+        '[class*="job-content"]',
       ];
       for (const sel of sels) {
         const el = document.querySelector(sel);
@@ -352,6 +371,15 @@ Output ONLY the corrected text. No preamble, no explanation.`;
       const companyEl = document.querySelector(
         '[class*="company-name"], [class*="CompanyName"], [class*="employer-name"], [class*="company"] h2, [class*="company"] a'
       );
+      return {
+        role:    roleEl    ? roleEl.innerText.trim().split('\n')[0]    : '',
+        company: companyEl ? companyEl.innerText.trim().split('\n')[0] : '',
+      };
+    }
+
+    if (site === 'hirect') {
+      const roleEl    = document.querySelector('h1, [class*="job-title"], [class*="JobTitle"], [class*="position-title"]');
+      const companyEl = document.querySelector('[class*="company-name"], [class*="CompanyName"], [class*="company"] a, [class*="company"] span');
       return {
         role:    roleEl    ? roleEl.innerText.trim().split('\n')[0]    : '',
         company: companyEl ? companyEl.innerText.trim().split('\n')[0] : '',
