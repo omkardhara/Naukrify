@@ -63,31 +63,44 @@ export default async function Home() {
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold text-center mb-12">How it works</h2>
           <div className="grid sm:grid-cols-3 gap-8">
-            {[
-              {
-                step: '1',
-                title: 'Install the Chrome extension',
-                body: 'One click from the Chrome Web Store. Paste your free Gemini API key. Done.',
-              },
-              {
-                step: '2',
-                title: 'Open any job page',
-                body: 'Works on LinkedIn, Naukri, Wellfound, and Instahyre. Click the "Tailor with AI" button — it reads the job description and your CV automatically.',
-              },
-              {
-                step: '3',
-                title: 'Copy and apply',
-                body: 'Get a tailored CV summary and a 130-word cover letter in under 30 seconds. Review, copy, send.',
-              },
-            ].map((item) => (
-              <div key={item.step} className="text-center">
-                <div className="w-10 h-10 rounded-full bg-indigo-600 text-white text-lg font-bold flex items-center justify-center mx-auto mb-4">
-                  {item.step}
-                </div>
-                <h3 className="font-semibold mb-2">{item.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{item.body}</p>
+            <div className="text-center">
+              <div className="w-10 h-10 rounded-full bg-indigo-600 text-white text-lg font-bold flex items-center justify-center mx-auto mb-4">
+                1
               </div>
-            ))}
+              <h3 className="font-semibold mb-2">Install the Chrome extension</h3>
+              <p className="text-sm text-gray-500 leading-relaxed mb-3">
+                One click from the Chrome Web Store. Paste your free Gemini API key. Done in under 2 minutes.
+              </p>
+              <a
+                href="https://chrome.google.com/webstore/detail/naukrify"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 border border-indigo-200 bg-indigo-50 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
+                </svg>
+                Install on Chrome
+              </a>
+            </div>
+            <div className="text-center">
+              <div className="w-10 h-10 rounded-full bg-indigo-600 text-white text-lg font-bold flex items-center justify-center mx-auto mb-4">
+                2
+              </div>
+              <h3 className="font-semibold mb-2">Open any job page</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                Works on LinkedIn, Naukri, Wellfound, Instahyre, and Hirect. Click the &quot;Tailor with AI&quot; button — it reads the job description and your CV automatically.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="w-10 h-10 rounded-full bg-indigo-600 text-white text-lg font-bold flex items-center justify-center mx-auto mb-4">
+                3
+              </div>
+              <h3 className="font-semibold mb-2">Copy and apply</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                Get a tailored CV summary and a 130-word cover letter in under 30 seconds. Review, copy, send.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -229,7 +242,7 @@ export default async function Home() {
               },
               {
                 q: 'Does it work on Naukri and Wellfound too?',
-                a: 'Yes. The extension works on LinkedIn Jobs, Naukri, Wellfound, and Instahyre. Click the "Tailor with AI" button that appears on any job page.',
+                a: 'Yes. The extension works on LinkedIn Jobs, Naukri, Wellfound, Instahyre, and Hirect. Click the "Tailor with AI" button that appears on any job page.',
               },
               {
                 q: 'What happens to my CV data?',
@@ -246,6 +259,10 @@ export default async function Home() {
               {
                 q: 'Can I use my own voice or style?',
                 a: 'Yes. Add "Voice notes" in the extension popup (e.g. "cool tone, no jargon, India context"). You can also create role tilts in the web dashboard to angle the CV for different role types.',
+              },
+              {
+                q: 'Is there interview prep?',
+                a: 'Yes. The web dashboard has an "Interview prep" tab. Paste any job description, enter your Gemini key, and get 12 tailored questions across 4 categories — with answer frameworks drawn from your actual CV.',
               },
             ].map((item) => (
               <div key={item.q} className="border-b border-gray-200 pb-6 last:border-0">

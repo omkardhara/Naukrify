@@ -11,7 +11,11 @@ export const metadata: Metadata = {
   },
   description:
     'Tailored CVs and cover letters for every Indian job application. Voice-filtered output. Application tracker. Bring your own Gemini key — zero ongoing cost.',
-  keywords: ['job hunt India', 'AI cover letter India', 'tailored CV', 'Naukri', 'LinkedIn jobs India', 'job application tracker'],
+  keywords: ['job hunt India', 'AI cover letter India', 'tailored CV', 'Naukri', 'LinkedIn jobs India', 'job application tracker', 'interview prep India'],
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+  },
   openGraph: {
     title: 'Naukrify — AI Job Hunt Co-pilot for India',
     description:
@@ -20,12 +24,14 @@ export const metadata: Metadata = {
     siteName: 'Naukrify',
     locale: 'en_IN',
     type: 'website',
+    images: ['/opengraph-image'],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Naukrify — AI Job Hunt Co-pilot for India',
     description:
       'Tailored CVs and cover letters for every Indian job application. Built for Naukri, LinkedIn, Wellfound. One-time payment.',
+    images: ['/opengraph-image'],
   },
   robots: {
     index: true,
