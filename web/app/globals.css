@@ -1,3 +1,25 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@media print {
+  /* Hide chrome, nav, banners — only the main content area prints */
+  nav,
+  header,
+  .naukrify-no-print,
+  button:not(.naukrify-print-show) {
+    display: none !important;
+  }
+  body {
+    background: white;
+    color: black;
+    font-size: 11pt;
+  }
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+  /* Keep question cards legible on paper */
+  .border { border: 1px solid #ccc !important; }
+  .bg-gray-50 { background: white !important; }
+}

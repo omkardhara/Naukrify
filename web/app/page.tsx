@@ -41,6 +41,23 @@ export default async function Home() {
         </p>
       </section>
 
+      {/* ── Stats strip ── */}
+      <section className="border-y border-gray-100 px-6 py-6">
+        <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+          {[
+            { stat: '30 sec',    label: 'CV + cover letter' },
+            { stat: '5 sites',   label: 'LinkedIn, Naukri, Wellfound + more' },
+            { stat: '1,500/day', label: 'Free Gemini calls' },
+            { stat: '₹0',        label: 'Ongoing LLM cost' },
+          ].map((item) => (
+            <div key={item.stat}>
+              <p className="text-2xl font-extrabold text-indigo-600">{item.stat}</p>
+              <p className="text-xs text-gray-500 mt-1">{item.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* ── How it works ── */}
       <section className="bg-gray-50 px-6 py-16">
         <div className="max-w-4xl mx-auto">
@@ -107,6 +124,49 @@ export default async function Home() {
               <p className="text-sm text-gray-500 leading-relaxed">{f.body}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ── Voice filter before/after ── */}
+      <section className="bg-gray-50 px-6 py-16">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-bold text-center mb-3">The cover letter that sounds like you</h2>
+          <p className="text-sm text-gray-500 text-center mb-10 max-w-xl mx-auto">
+            Most AI tools produce the same corporate slop. Naukrify runs every output through a voice-rules
+            engine before showing it to you.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-6">
+            <div className="rounded-xl border border-red-200 bg-red-50 p-5">
+              <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-3">
+                Generic AI output (blocked)
+              </p>
+              <p className="text-sm text-gray-700 leading-relaxed italic">
+                &ldquo;I am deeply passionate about leveraging my robust skillset to unlock new paradigms
+                at your innovative organization. My holistic approach to brand building seamlessly aligns
+                with your transformative vision...&rdquo;
+              </p>
+              <div className="mt-3 flex flex-wrap gap-1">
+                {['passionate', 'leverage', 'robust', 'holistic', 'seamlessly', 'transformative'].map((w) => (
+                  <span key={w} className="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full line-through">{w}</span>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-xl border border-green-200 bg-green-50 p-5">
+              <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-3">
+                Naukrify output (voice-filtered)
+              </p>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                &ldquo;At Razorpay I built the sponsorship vertical from scratch — 12 brand partners in
+                8 months, ₹2.4 Cr in revenue. Your JD asks for someone who can run the full BD cycle
+                solo, and that&apos;s exactly what I did there...&rdquo;
+              </p>
+              <div className="mt-3 flex flex-wrap gap-1">
+                {['specific numbers', 'no AI slop', '130 words', 'your voice'].map((w) => (
+                  <span key={w} className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">{w}</span>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

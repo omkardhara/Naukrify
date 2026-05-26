@@ -6,8 +6,15 @@ import GeminiDisclaimer from '@/components/GeminiDisclaimer'
 import TrialBanner from '@/components/TrialBanner'
 import TokenDisplay from '@/components/TokenDisplay'
 import OnboardingBanner from '@/components/OnboardingBanner'
+import PaymentSuccessBanner from '@/components/PaymentSuccessBanner'
 
-export default async function Dashboard() {
+export default async function Dashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ payment?: string }>
+}) {
+  const params = await searchParams
+  const paymentSuccess = params.payment === 'success'
   const supabase = await createClient()
 
   const {
@@ -53,6 +60,7 @@ export default async function Dashboard() {
         </div>
 
         <div className="space-y-4 mb-8">
+          {paymentSuccess && <PaymentSuccessBanner />}
           <OnboardingBanner hasCv={!!(profile?.master_cv && profile.master_cv.trim().length > 50)} />
           <TrialBanner
             isPaid={isPaid}
