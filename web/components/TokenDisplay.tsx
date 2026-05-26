@@ -2,13 +2,6 @@
 
 import { useState } from 'react'
 
-/**
- * Slice 1 dev helper: shows the Supabase access token so the user can
- * copy it into the extension popup's "Account token" field.
- *
- * TODO Slice 2: delete this component and its usage in dashboard/page.tsx.
- * Replace with the real extension OAuth handshake.
- */
 export default function TokenDisplay({ accessToken }: { accessToken: string }) {
   const [visible, setVisible] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -23,41 +16,35 @@ export default function TokenDisplay({ accessToken }: { accessToken: string }) {
   }
 
   return (
-    <div className="mt-12 rounded-lg border border-amber-200 bg-amber-50 p-4">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-medium text-amber-800">
-          Extension sync token{' '}
-          <span className="font-normal text-amber-600 text-xs">
-            — dev helper, removed in Slice 2
-          </span>
-        </p>
+    <div className="mt-10 rounded-lg border border-gray-200 bg-gray-50 p-4">
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-sm font-medium text-gray-700">Extension sync token</p>
         <button
           onClick={() => setVisible((v) => !v)}
-          className="text-xs text-amber-600 hover:text-amber-800 underline"
+          className="text-xs text-gray-500 hover:text-gray-700 underline"
         >
           {visible ? 'Hide' : 'Show'}
         </button>
       </div>
+      <p className="text-xs text-gray-500 mb-3">
+        Open the Naukrify extension popup, paste this token in the Account token field,
+        and click Sync. Your CV and tilts will load from your account automatically.
+        Also available in Settings.
+      </p>
 
       {visible && (
         <div className="flex items-start gap-2 mb-2">
-          <code className="flex-1 text-xs break-all bg-amber-100 rounded px-2 py-1.5 text-amber-900 leading-relaxed select-all">
+          <code className="flex-1 text-xs break-all bg-white border border-gray-200 rounded px-2 py-1.5 text-gray-700 leading-relaxed select-all">
             {accessToken}
           </code>
           <button
             onClick={handleCopy}
-            className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium px-3 py-1.5 rounded transition-colors"
+            className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 py-1.5 rounded transition-colors whitespace-nowrap"
           >
             {copied ? 'Copied!' : 'Copy'}
           </button>
         </div>
       )}
-
-      <p className="text-xs text-amber-600">
-        Copy this token, open the Naukrify extension popup, paste it into the
-        &ldquo;Account token&rdquo; field, and click Sync. Your CV loads from
-        your account.
-      </p>
     </div>
   )
 }

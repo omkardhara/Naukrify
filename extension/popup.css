@@ -60,25 +60,12 @@ button#save:hover { background: #094a8a; }
   color: #888;
 }
 
-/* ── Account sync section (Slice 1) ──────────────────────────── */
+/* ── Account sync section ─────────────────────────────────────── */
 .sync-section {
-  background: #fffbeb;
-  border: 1px solid #fcd34d;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
   border-radius: 6px;
   padding: 10px 12px;
-}
-.badge {
-  display: inline-block;
-  background: #fcd34d;
-  color: #78350f;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 3px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  vertical-align: middle;
-  margin-left: 4px;
 }
 .token-row {
   display: flex;
@@ -87,7 +74,7 @@ button#save:hover { background: #094a8a; }
 }
 .token-row input { flex: 1; }
 .token-row button {
-  background: #d97706;
+  background: #4f46e5;
   color: #fff;
   border: none;
   padding: 6px 10px;
@@ -97,7 +84,7 @@ button#save:hover { background: #094a8a; }
   font-weight: 600;
   white-space: nowrap;
 }
-.token-row button:hover { background: #b45309; }
+.token-row button:hover { background: #4338ca; }
 #sync-status {
   display: block;
   font-size: 11px;

@@ -19,7 +19,7 @@ export default async function Dashboard() {
   const [profileResult, variantsResult, sessionResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('master_cv, name, phone, is_paid, paid_until, total_generations, daily_generations')
+      .select('master_cv, name, phone, is_paid, paid_until, total_generations, daily_generations, daily_reset_date')
       .eq('id', user.id)
       .maybeSingle(),
     supabase
@@ -34,7 +34,10 @@ export default async function Dashboard() {
   const isPaid            = profile?.is_paid            ?? false
   const paidUntil         = profile?.paid_until         ?? null
   const totalGenerations  = profile?.total_generations  ?? 0
-  const dailyGenerations  = profile?.daily_generations  ?? 0
+  const dailyResetDate    = profile?.daily_reset_date   ?? null
+  const today             = new Date().toISOString().slice(0, 10)
+  // Reset daily counter if it wasn't updated today (prevents stale count from yesterday)
+  const dailyGenerations  = dailyResetDate === today ? (profile?.daily_generations ?? 0) : 0
   const userName          = profile?.name ?? (user.user_metadata?.full_name as string) ?? ''
 
   return (
