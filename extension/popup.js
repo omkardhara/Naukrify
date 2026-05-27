@@ -114,6 +114,56 @@ async function fetchVariants(token) {
   return res.json();
 }
 
+// ── Auto-extract JD from current tab (non-known sites) ───────────────────────
+const KNOWN_SITES = [
+  'linkedin.com','naukri.com','wellfound.com','instahyre.com','hirect.in',
+  'greenhouse.io','lever.co','myworkdayjobs.com','foundit.in','cutshort.io',
+  'darwinbox.in','iimjobs.com',
+];
+
+chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+  const tab = tabs[0];
+  if (!tab || !tab.url) return;
+  if (KNOWN_SITES.some((s) => tab.url.includes(s))) return; // content script handles these
+
+  const anyStatus = document.getElementById('any-status');
+  anyStatus.textContent = 'Detecting job description...';
+
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        const sels = [
+          '[data-automation-id="jobPostingDescription"]',
+          '#job-description','#jobDescription',
+          '[class*="job-description"]','[class*="jobDescription"]',
+          '[class*="job-details"]','[class*="jobDetails"]',
+          '[class*="job-content"]','[class*="position-description"]',
+          '[data-testid*="description"]','[data-automation*="description"]',
+          '.jd-content','.job-desc','.description-body',
+          'main article','main',
+        ];
+        for (const sel of sels) {
+          const el = document.querySelector(sel);
+          if (el && el.innerText && el.innerText.trim().length > 150) {
+            return el.innerText.trim().slice(0, 8000);
+          }
+        }
+        return '';
+      },
+    });
+    const text = results?.[0]?.result || '';
+    if (text.length > 150) {
+      document.getElementById('any-jd').value = text;
+      anyStatus.textContent = 'Job description auto-detected. Edit if needed, then click Generate.';
+    } else {
+      anyStatus.textContent = 'Could not auto-detect. Paste the job description manually.';
+    }
+  } catch (_) {
+    anyStatus.textContent = 'Could not read this page. Paste the job description manually.';
+  }
+});
+
 // ── Any-site generator ────────────────────────────────────────────────────────
 document.getElementById('any-generate').addEventListener('click', async () => {
   const jd     = document.getElementById('any-jd').value.trim();
