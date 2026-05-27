@@ -208,11 +208,13 @@ chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
     const { jd = '', role = '', company = '' } = results?.[0]?.result || {};
     anyTabCtx.role    = role;
     anyTabCtx.company = company;
+    if (company) document.getElementById('any-company').value = company;
+    if (role)    document.getElementById('any-role').value    = role;
     if (jd.length > 150) {
       document.getElementById('any-jd').value = jd;
-      anyStatus.textContent = 'Job description auto-detected. Edit if needed, then click Generate.';
+      anyStatus.textContent = 'Auto-detected. Edit company/role/JD if needed, then Generate.';
     } else {
-      anyStatus.textContent = 'Could not auto-detect. Paste the job description manually.';
+      anyStatus.textContent = 'Could not auto-detect JD. Fill in the fields and paste the job description.';
     }
   } catch (_) {
     anyStatus.textContent = 'Could not read this page. Paste the job description manually.';
@@ -330,8 +332,8 @@ Return JSON only: {"summary": "...", "coverLetter": "..."}`;
       if (token) {
         try {
           await logApplication(token, {
-            company:     anyTabCtx.company,
-            roleTitle:   anyTabCtx.role,
+            company:     document.getElementById('any-company').value.trim() || anyTabCtx.company,
+            roleTitle:   document.getElementById('any-role').value.trim()    || anyTabCtx.role,
             jobUrl:      anyTabCtx.url,
             source:      'other',
             coverLetter: coverLetter,
@@ -389,7 +391,9 @@ document.getElementById('any-results').addEventListener('click', (e) => {
 
   if (e.target.closest('.rtf-btn')) {
     const suffix   = e.target.closest('.rtf-btn').dataset.suffix;
-    const filename = `${slugify(anyTabCtx.company || 'company')}__${slugify(anyTabCtx.role || 'role')}__${suffix}.rtf`;
+    const company  = document.getElementById('any-company').value.trim() || anyTabCtx.company || 'company';
+    const role     = document.getElementById('any-role').value.trim()    || anyTabCtx.role    || 'role';
+    const filename = `${slugify(company)}__${slugify(role)}__${suffix}.rtf`;
     downloadRtf(text, filename);
   }
 });
