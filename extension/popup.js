@@ -271,15 +271,47 @@ Return JSON only: {"summary": "...", "coverLetter": "..."}`;
   });
 });
 
+function downloadRtf(text, filename) {
+  let body = '';
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i], code = text.charCodeAt(i);
+    if      (c === '\\') body += '\\\\';
+    else if (c === '{')  body += '\\{';
+    else if (c === '}')  body += '\\}';
+    else if (c === '\n') body += '\\par\n';
+    else if (code > 127) body += '\\u' + code + '?';
+    else                 body += c;
+  }
+  const rtf  = `{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0 Calibri;}}\n\\f0\\fs24 ${body}\n}`;
+  const blob = new Blob([rtf], { type: 'application/rtf' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function slugify(s) {
+  return (s || 'job').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+}
+
 document.getElementById('any-results').addEventListener('click', (e) => {
-  const btn = e.target.closest('.copy-btn');
-  if (!btn) return;
-  const text = document.getElementById(btn.dataset.target)?.textContent || '';
-  navigator.clipboard.writeText(text).then(() => {
-    const orig = btn.textContent;
-    btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = orig; }, 1500);
-  });
+  const text = document.getElementById(e.target.closest('[data-target]')?.dataset.target)?.textContent || '';
+  if (!text) return;
+
+  if (e.target.closest('.copy-btn')) {
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = e.target.closest('.copy-btn');
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    });
+  }
+
+  if (e.target.closest('.rtf-btn')) {
+    const suffix   = e.target.closest('.rtf-btn').dataset.suffix;
+    const filename = `${slugify(anyTabCtx.company || 'company')}__${slugify(anyTabCtx.role || 'role')}__${suffix}.rtf`;
+    downloadRtf(text, filename);
+  }
 });
 
 function populateVariantDropdown(variants, selectedId) {

@@ -146,9 +146,8 @@ button#save:hover { background: #094a8a; }
   align-items: center;
   justify-content: space-between;
 }
-.copy-btn {
-  background: #e0e7ff;
-  color: #4f46e5;
+.result-actions { display: flex; gap: 4px; }
+.copy-btn, .rtf-btn {
   border: none;
   padding: 2px 8px;
   border-radius: 3px;
@@ -156,7 +155,10 @@ button#save:hover { background: #094a8a; }
   font-size: 10px;
   font-weight: 600;
 }
+.copy-btn { background: #e0e7ff; color: #4f46e5; }
 .copy-btn:hover { background: #c7d2fe; }
+.rtf-btn { background: #f0fdf4; color: #16a34a; }
+.rtf-btn:hover { background: #dcfce7; }
 .result-text {
   font-size: 12px;
   color: #374151;

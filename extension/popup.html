@@ -90,11 +90,23 @@
     <span id="any-status"></span>
     <div id="any-results" style="display:none">
       <div class="result-block">
-        <div class="result-label">CV Summary <button class="copy-btn" data-target="any-summary">Copy</button></div>
+        <div class="result-label">
+          CV Summary
+          <span class="result-actions">
+            <button class="copy-btn" data-target="any-summary">Copy</button>
+            <button class="rtf-btn" data-target="any-summary" data-suffix="cv-summary">RTF</button>
+          </span>
+        </div>
         <div id="any-summary" class="result-text"></div>
       </div>
       <div class="result-block">
-        <div class="result-label">Cover Letter <button class="copy-btn" data-target="any-cl">Copy</button></div>
+        <div class="result-label">
+          Cover Letter
+          <span class="result-actions">
+            <button class="copy-btn" data-target="any-cl">Copy</button>
+            <button class="rtf-btn" data-target="any-cl" data-suffix="cover-letter">RTF</button>
+          </span>
+        </div>
         <div id="any-cl" class="result-text"></div>
       </div>
     </div>
