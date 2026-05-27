@@ -244,9 +244,35 @@ document.getElementById('any-generate').addEventListener('click', async () => {
       } catch (_) {}
     }
 
-    btn.disabled      = true;
-    btn.textContent   = 'Generating...';
+    btn.disabled       = true;
+    btn.textContent    = 'Checking usage...';
     status.textContent = '';
+
+    // Enforce usage limits — same gate as the content script
+    if (token) {
+      let usage;
+      try {
+        usage = await checkAndIncrementUsage(token);
+      } catch (err) {
+        if (err.code === 'token_expired') {
+          status.textContent = 'Session expired. Re-sync your account token and try again.';
+          btn.disabled = false; btn.textContent = 'Generate CV summary + cover letter'; return;
+        }
+        // Supabase unreachable — allow generation but warn
+        console.warn('Usage check failed:', err.message);
+      }
+      if (usage && !usage.allowed) {
+        const msgs = {
+          trial_exhausted: 'Trial limit reached. Upgrade at naukrify.com/dashboard to continue.',
+          daily_limit:     'Daily limit reached. Come back tomorrow for more generations.',
+          plan_expired:    'Your plan expired. Renew at naukrify.com/dashboard.',
+        };
+        status.textContent = msgs[usage.reason] || 'Generation limit reached.';
+        btn.disabled = false; btn.textContent = 'Generate CV summary + cover letter'; return;
+      }
+    }
+
+    btn.textContent    = 'Generating...';
     document.getElementById('any-results').style.display = 'none';
 
     const prompt = `You are a professional CV and cover letter writer for India job seekers.
@@ -300,17 +326,21 @@ Return JSON only: {"summary": "...", "coverLetter": "..."}`;
       document.getElementById('any-results').style.display = 'block';
       status.textContent = '';
 
-      // Log to application tracker
+      // Log to application tracker — awaited so it completes before popup can close
       if (token) {
-        logApplication(token, {
-          company:     anyTabCtx.company,
-          roleTitle:   anyTabCtx.role,
-          jobUrl:      anyTabCtx.url,
-          source:      'other',
-          coverLetter: coverLetter,
-          cvSummary:   summary,
-          jd:          jd,
-        }).catch((err) => { console.warn('logApplication failed:', err); });
+        try {
+          await logApplication(token, {
+            company:     anyTabCtx.company,
+            roleTitle:   anyTabCtx.role,
+            jobUrl:      anyTabCtx.url,
+            source:      'other',
+            coverLetter: coverLetter,
+            cvSummary:   summary,
+            jd:          jd,
+          });
+        } catch (err) {
+          console.warn('logApplication failed:', err);
+        }
       }
     } catch (e) {
       status.textContent = e instanceof SyntaxError ? 'Could not parse response. Try again.' : e.message;
