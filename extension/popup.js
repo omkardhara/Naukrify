@@ -227,12 +227,22 @@ document.getElementById('any-generate').addEventListener('click', async () => {
 
   if (jd.length < 50) { status.textContent = 'Paste a job description first (at least 50 characters).'; return; }
 
-  chrome.storage.local.get(['geminiKey', 'masterCv'], async (data) => {
-    const apiKey = data.geminiKey || '';
-    const cv     = data.masterCv  || '';
+  // Read all needed keys in one call — avoids nested callbacks and timing issues
+  chrome.storage.local.get(['geminiKey', 'masterCv', 'supabaseToken'], async (data) => {
+    const apiKey = data.geminiKey     || '';
+    const cv     = data.masterCv      || '';
+    const token  = data.supabaseToken || '';
 
     if (!apiKey) { status.textContent = 'Enter your Gemini API key above and save first.'; return; }
     if (!cv || cv.length < 50) { status.textContent = 'No CV found. Sync your account or paste your CV above and save.'; return; }
+
+    // If anyTabCtx.url wasn't captured (e.g. page blocked scripting), grab it now
+    if (!anyTabCtx.url) {
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab?.url) anyTabCtx.url = tab.url;
+      } catch (_) {}
+    }
 
     btn.disabled      = true;
     btn.textContent   = 'Generating...';
@@ -291,19 +301,17 @@ Return JSON only: {"summary": "...", "coverLetter": "..."}`;
       status.textContent = '';
 
       // Log to application tracker
-      chrome.storage.local.get(['supabaseToken'], (store) => {
-        if (store.supabaseToken) {
-          logApplication(store.supabaseToken, {
-            company:      anyTabCtx.company,
-            roleTitle:    anyTabCtx.role,
-            jobUrl:       anyTabCtx.url,
-            source:       'other',
-            coverLetter:  coverLetter,
-            cvSummary:    summary,
-            jd:           jd,
-          }).catch(() => {});
-        }
-      });
+      if (token) {
+        logApplication(token, {
+          company:     anyTabCtx.company,
+          roleTitle:   anyTabCtx.role,
+          jobUrl:      anyTabCtx.url,
+          source:      'other',
+          coverLetter: coverLetter,
+          cvSummary:   summary,
+          jd:          jd,
+        }).catch((err) => { console.warn('logApplication failed:', err); });
+      }
     } catch (e) {
       status.textContent = e instanceof SyntaxError ? 'Could not parse response. Try again.' : e.message;
     } finally {
