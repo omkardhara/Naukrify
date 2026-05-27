@@ -121,10 +121,15 @@ const KNOWN_SITES = [
   'darwinbox.in','iimjobs.com',
 ];
 
+// Stores context captured from the current tab for use in logApplication
+let anyTabCtx = { url: '', role: '', company: '', source: 'other' };
+
 chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
   const tab = tabs[0];
   if (!tab || !tab.url) return;
   if (KNOWN_SITES.some((s) => tab.url.includes(s))) return; // content script handles these
+
+  anyTabCtx.url = tab.url;
 
   const anyStatus = document.getElementById('any-status');
   anyStatus.textContent = 'Detecting job description...';
@@ -143,18 +148,26 @@ chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
           '.jd-content','.job-desc','.description-body',
           'main article','main',
         ];
+        let jd = '';
         for (const sel of sels) {
           const el = document.querySelector(sel);
           if (el && el.innerText && el.innerText.trim().length > 150) {
-            return el.innerText.trim().slice(0, 8000);
+            jd = el.innerText.trim().slice(0, 8000);
+            break;
           }
         }
-        return '';
+        const h1 = document.querySelector('h1');
+        const role = h1 ? h1.innerText.trim().split('\n')[0] : '';
+        const titleParts = document.title.split(/[-|–—]/);
+        const company = titleParts.length > 1 ? titleParts[titleParts.length - 1].trim() : '';
+        return { jd, role, company };
       },
     });
-    const text = results?.[0]?.result || '';
-    if (text.length > 150) {
-      document.getElementById('any-jd').value = text;
+    const { jd = '', role = '', company = '' } = results?.[0]?.result || {};
+    anyTabCtx.role    = role;
+    anyTabCtx.company = company;
+    if (jd.length > 150) {
+      document.getElementById('any-jd').value = jd;
       anyStatus.textContent = 'Job description auto-detected. Edit if needed, then click Generate.';
     } else {
       anyStatus.textContent = 'Could not auto-detect. Paste the job description manually.';
@@ -208,23 +221,47 @@ Return JSON only: {"summary": "...", "coverLetter": "..."}`;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { thinkingConfig: { thinkingBudget: 0 }, maxOutputTokens: 2048 },
+            generationConfig: {
+              thinkingConfig: { thinkingBudget: 0 },
+              maxOutputTokens: 2048,
+              responseMimeType: 'application/json',
+            },
           }),
         }
       );
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error?.message || `Gemini error ${res.status}`);
+        const msg = err.error?.message || '';
+        if (res.status === 429) throw new Error('Gemini rate limit hit. Wait a minute and try again.');
+        if (res.status === 403) throw new Error('Gemini API key invalid or quota exceeded.');
+        throw new Error(msg || `Gemini error ${res.status}`);
       }
       const data2  = await res.json();
       const raw    = data2.candidates?.[0]?.content?.parts?.[0]?.text || '';
       const clean  = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
       const parsed = JSON.parse(clean);
 
-      document.getElementById('any-summary').textContent = parsed.summary    || '';
-      document.getElementById('any-cl').textContent      = parsed.coverLetter || '';
+      const summary     = parsed.summary     || '';
+      const coverLetter = parsed.coverLetter || '';
+      document.getElementById('any-summary').textContent = summary;
+      document.getElementById('any-cl').textContent      = coverLetter;
       document.getElementById('any-results').style.display = 'block';
       status.textContent = '';
+
+      // Log to application tracker
+      chrome.storage.local.get(['supabaseToken'], (store) => {
+        if (store.supabaseToken) {
+          logApplication(store.supabaseToken, {
+            company:      anyTabCtx.company,
+            roleTitle:    anyTabCtx.role,
+            jobUrl:       anyTabCtx.url,
+            source:       'other',
+            coverLetter:  coverLetter,
+            cvSummary:    summary,
+            jd:           jd,
+          }).catch(() => {});
+        }
+      });
     } catch (e) {
       status.textContent = e instanceof SyntaxError ? 'Could not parse response. Try again.' : e.message;
     } finally {
