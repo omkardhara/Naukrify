@@ -73,7 +73,31 @@
   <span id="status"></span>
 
   <div class="footer">
-    Go to a job page on LinkedIn, Naukri, Wellfound, Instahyre, or Hirect and click "Tailor with AI".
+    Works on LinkedIn, Naukri, Wellfound, Instahyre, Hirect, Greenhouse, Lever, Workday, Foundit, Cutshort, and more.
+  </div>
+
+  <!-- ── Any site: paste JD here ─────────────────────────────────────────── -->
+  <div class="any-site-section">
+    <div class="any-site-header">Generate on any site</div>
+    <p class="hint" style="margin-bottom:8px">
+      On company career pages or unsupported job sites, paste the job description below and generate directly.
+    </p>
+    <div class="section">
+      <label for="any-jd">Job description</label>
+      <textarea id="any-jd" rows="5" placeholder="Paste the job description here..."></textarea>
+    </div>
+    <button id="any-generate">Generate CV summary + cover letter</button>
+    <span id="any-status"></span>
+    <div id="any-results" style="display:none">
+      <div class="result-block">
+        <div class="result-label">CV Summary <button class="copy-btn" data-target="any-summary">Copy</button></div>
+        <div id="any-summary" class="result-text"></div>
+      </div>
+      <div class="result-block">
+        <div class="result-label">Cover Letter <button class="copy-btn" data-target="any-cl">Copy</button></div>
+        <div id="any-cl" class="result-text"></div>
+      </div>
+    </div>
   </div>
 
   <script src="lib/config.js"></script>

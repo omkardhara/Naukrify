@@ -1,8 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Naukrify",
-  "version": "0.1.0",
-  "description": "AI-tailored CV summaries and cover letters for India job hunters. Works on LinkedIn, Naukri, Wellfound, and Instahyre. Bring your own free Gemini key.",
+  "version": "0.2.0",
+  "description": "AI-tailored CV summaries and cover letters for India job hunters. Works on LinkedIn, Naukri, Wellfound, Instahyre, Hirect, Greenhouse, Lever, Workday, Foundit, Cutshort, and more. Bring your own free Gemini key.",
+  "icons": {
+    "16":  "icon16.png",
+    "48":  "icon48.png",
+    "128": "icon128.png"
+  },
   "permissions": ["storage", "activeTab"],
   "host_permissions": [
     "https://www.linkedin.com/*",
@@ -10,12 +15,24 @@
     "https://wellfound.com/*",
     "https://www.instahyre.com/*",
     "https://hirect.in/*",
+    "https://*.greenhouse.io/*",
+    "https://jobs.lever.co/*",
+    "https://*.myworkdayjobs.com/*",
+    "https://www.foundit.in/*",
+    "https://cutshort.io/*",
+    "https://*.darwinbox.in/*",
+    "https://www.iimjobs.com/*",
     "https://generativelanguage.googleapis.com/*",
     "https://*.supabase.co/*"
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Naukrify settings"
+    "default_title": "Naukrify",
+    "default_icon": {
+      "16":  "icon16.png",
+      "48":  "icon48.png",
+      "128": "icon128.png"
+    }
   },
   "content_scripts": [
     {
@@ -24,7 +41,15 @@
         "https://www.naukri.com/*",
         "https://wellfound.com/jobs/*",
         "https://www.instahyre.com/*",
-        "https://hirect.in/*"
+        "https://hirect.in/*",
+        "https://*.greenhouse.io/jobs/*",
+        "https://jobs.lever.co/*",
+        "https://*.myworkdayjobs.com/*",
+        "https://www.foundit.in/job/*",
+        "https://www.foundit.in/jobs/*",
+        "https://cutshort.io/jobs/*",
+        "https://*.darwinbox.in/*",
+        "https://www.iimjobs.com/jobs/*"
       ],
       "js": ["lib/config.js", "lib/sync.js", "content.js"],
       "css": ["content.css"],

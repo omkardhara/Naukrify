@@ -114,6 +114,87 @@ async function fetchVariants(token) {
   return res.json();
 }
 
+// ── Any-site generator ────────────────────────────────────────────────────────
+document.getElementById('any-generate').addEventListener('click', async () => {
+  const jd     = document.getElementById('any-jd').value.trim();
+  const status = document.getElementById('any-status');
+  const btn    = document.getElementById('any-generate');
+
+  if (jd.length < 50) { status.textContent = 'Paste a job description first (at least 50 characters).'; return; }
+
+  chrome.storage.local.get(['geminiKey', 'masterCv'], async (data) => {
+    const apiKey = data.geminiKey || '';
+    const cv     = data.masterCv  || '';
+
+    if (!apiKey) { status.textContent = 'Enter your Gemini API key above and save first.'; return; }
+    if (!cv || cv.length < 50) { status.textContent = 'No CV found. Sync your account or paste your CV above and save.'; return; }
+
+    btn.disabled      = true;
+    btn.textContent   = 'Generating...';
+    status.textContent = '';
+    document.getElementById('any-results').style.display = 'none';
+
+    const prompt = `You are a professional CV and cover letter writer for India job seekers.
+
+JOB DESCRIPTION:
+${jd}
+
+CANDIDATE CV:
+${cv.slice(0, 4000)}
+
+Generate two things:
+1. CV SUMMARY: 3-4 lines (60-70 words) highlighting the most relevant experience for this role. Use specific numbers from the CV.
+2. COVER LETTER: 120-140 words. First person, direct. Start with a specific achievement from the CV that matches the JD. No generic opener.
+
+RULES: No em-dashes. No banned words (leverage, synergy, holistic, transformative, seamless, robust, paradigm, innovative, spearhead). India context. Never invent experience.
+
+Return JSON only: {"summary": "...", "coverLetter": "..."}`;
+
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { thinkingConfig: { thinkingBudget: 0 }, maxOutputTokens: 2048 },
+          }),
+        }
+      );
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error?.message || `Gemini error ${res.status}`);
+      }
+      const data2  = await res.json();
+      const raw    = data2.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const clean  = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+      const parsed = JSON.parse(clean);
+
+      document.getElementById('any-summary').textContent = parsed.summary    || '';
+      document.getElementById('any-cl').textContent      = parsed.coverLetter || '';
+      document.getElementById('any-results').style.display = 'block';
+      status.textContent = '';
+    } catch (e) {
+      status.textContent = e instanceof SyntaxError ? 'Could not parse response. Try again.' : e.message;
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = 'Generate CV summary + cover letter';
+    }
+  });
+});
+
+document.getElementById('any-results').addEventListener('click', (e) => {
+  const btn = e.target.closest('.copy-btn');
+  if (!btn) return;
+  const text = document.getElementById(btn.dataset.target)?.textContent || '';
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  });
+});
+
 function populateVariantDropdown(variants, selectedId) {
   const select = document.getElementById('variant');
   // Keep the first "No tilt" option, remove the rest

@@ -246,21 +246,41 @@ Output ONLY the corrected text. No preamble, no explanation.`;
 
   function currentSite() {
     const h = location.hostname;
-    if (h.includes('naukri.com'))     return 'naukri';
-    if (h.includes('wellfound.com'))  return 'wellfound';
-    if (h.includes('instahyre.com'))  return 'instahyre';
-    if (h.includes('hirect.in'))      return 'hirect';
-    return 'linkedin';
+    if (h.includes('naukri.com'))          return 'naukri';
+    if (h.includes('wellfound.com'))       return 'wellfound';
+    if (h.includes('instahyre.com'))       return 'instahyre';
+    if (h.includes('hirect.in'))           return 'hirect';
+    if (h.includes('greenhouse.io'))       return 'greenhouse';
+    if (h.includes('lever.co'))            return 'lever';
+    if (h.includes('myworkdayjobs.com'))   return 'workday';
+    if (h.includes('foundit.in') || h.includes('foundit.com')) return 'foundit';
+    if (h.includes('cutshort.io'))         return 'cutshort';
+    if (h.includes('darwinbox.in'))        return 'darwinbox';
+    if (h.includes('iimjobs.com'))         return 'iimjobs';
+    if (h.includes('linkedin.com'))        return 'linkedin';
+    return 'generic';
   }
 
   function isJobPage() {
     const site = currentSite();
     const path = location.pathname;
-    if (site === 'linkedin')   return path.startsWith('/jobs/');
-    if (site === 'naukri')     return /\/(job-listings-|view\/jobs\/)/.test(path) || document.querySelector('.jd-header-title, .job-header h1') !== null;
-    if (site === 'wellfound')  return path.startsWith('/jobs/');
-    if (site === 'instahyre')  return /\/(candidate\/opportunities|job-detail|jobs\/)/.test(path) || document.querySelector('.job-details, [class*="JobDetail"], [class*="job-detail"]') !== null;
-    if (site === 'hirect')     return /\/(job|jobs)\//.test(path) || document.querySelector('[class*="job-detail"], [class*="JobDetail"]') !== null;
+    if (site === 'linkedin')    return path.startsWith('/jobs/');
+    if (site === 'naukri')      return /\/(job-listings-|view\/jobs\/)/.test(path) || document.querySelector('.jd-header-title, .job-header h1') !== null;
+    if (site === 'wellfound')   return path.startsWith('/jobs/');
+    if (site === 'instahyre')   return /\/(candidate\/opportunities|job-detail|jobs\/)/.test(path) || document.querySelector('.job-details, [class*="JobDetail"], [class*="job-detail"]') !== null;
+    if (site === 'hirect')      return /\/(job|jobs)\//.test(path) || document.querySelector('[class*="job-detail"], [class*="JobDetail"]') !== null;
+    if (site === 'greenhouse')  return /\/jobs\/\d+/.test(path) || document.querySelector('#app_body, .application-body') !== null;
+    if (site === 'lever')       return document.querySelector('.posting-headline') !== null;
+    if (site === 'workday')     return path.includes('/job/') || document.querySelector('[data-automation-id="jobPostingHeader"]') !== null;
+    if (site === 'foundit')     return /\/(job|jobs)\//.test(path) || document.querySelector('.jd-header-title, .job-details') !== null;
+    if (site === 'cutshort')    return path.startsWith('/jobs/') || document.querySelector('[class*="job-detail"]') !== null;
+    if (site === 'darwinbox')   return /\/(jobs|job|career|position)\//.test(path) || document.querySelector('[class*="job-detail"]') !== null;
+    if (site === 'iimjobs')     return /\/jobs\//.test(path) || document.querySelector('.job-header, [class*="jd-"]') !== null;
+    if (site === 'generic') {
+      const hasJobUrl = /\/(job|jobs|career|careers|position|positions|opening|openings|vacancy|vacancies)\//i.test(path);
+      const hasJobEl  = document.querySelector('[class*="job-description"],[class*="job-detail"],[id*="job-description"],[data-automation*="job"]') !== null;
+      return hasJobUrl || hasJobEl;
+    }
     return false;
   }
 
@@ -332,17 +352,67 @@ Output ONLY the corrected text. No preamble, no explanation.`;
       }
     }
 
-    // LinkedIn (default)
-    const sels = [
-      '.jobs-description-content__text',
-      '.jobs-box__html-content',
-      '.jobs-description__content',
-      '.jobs-description',
-      '[class*="jobs-description"]',
+    if (site === 'greenhouse') {
+      for (const sel of ['#content .section-wrapper', '.job-description', '#app_body .content', '[class*="job-post"]']) {
+        const el = document.querySelector(sel);
+        if (el && el.innerText && el.innerText.length > 100) return el.innerText.trim().slice(0, 8000);
+      }
+    }
+
+    if (site === 'lever') {
+      for (const sel of ['.posting-requirements', '.posting-description', '.section-wrapper', '.main-content']) {
+        const el = document.querySelector(sel);
+        if (el && el.innerText && el.innerText.length > 100) return el.innerText.trim().slice(0, 8000);
+      }
+    }
+
+    if (site === 'workday') {
+      for (const sel of ['[data-automation-id="jobPostingDescription"]', '[data-automation-id="job-posting-details"]', '[class*="rich-text-container"]']) {
+        const el = document.querySelector(sel);
+        if (el && el.innerText && el.innerText.length > 100) return el.innerText.trim().slice(0, 8000);
+      }
+    }
+
+    if (site === 'foundit') {
+      for (const sel of ['.job-desc-text', '.jd-desc', '.det-desc', '[class*="job-description"]']) {
+        const el = document.querySelector(sel);
+        if (el && el.innerText && el.innerText.length > 100) return el.innerText.trim().slice(0, 8000);
+      }
+    }
+
+    if (site === 'cutshort') {
+      for (const sel of ['.job-description', '[class*="description"]', '.markdown-body']) {
+        const el = document.querySelector(sel);
+        if (el && el.innerText && el.innerText.length > 100) return el.innerText.trim().slice(0, 8000);
+      }
+    }
+
+    if (site === 'darwinbox') {
+      for (const sel of ['[class*="job-description"]', '[class*="jd-"]', '.job-desc', '[data-section="description"]']) {
+        const el = document.querySelector(sel);
+        if (el && el.innerText && el.innerText.length > 100) return el.innerText.trim().slice(0, 8000);
+      }
+    }
+
+    if (site === 'iimjobs') {
+      for (const sel of ['.job-desc-text', '.job-description', '[class*="jd-"]', '.det-desc']) {
+        const el = document.querySelector(sel);
+        if (el && el.innerText && el.innerText.length > 100) return el.innerText.trim().slice(0, 8000);
+      }
+    }
+
+    // LinkedIn + generic fallback
+    const genericSels = [
+      '.jobs-description-content__text', '.jobs-box__html-content', '.jobs-description__content', '.jobs-description', '[class*="jobs-description"]',
+      '#job-description', '#jobDescription',
+      '[class*="job-description"]', '[class*="jobDescription"]',
+      '[class*="job-details"]', '[class*="job-content"]',
+      '[data-testid*="description"]', '[data-automation*="description"]',
+      '.jd-content', '.description-body',
     ];
-    for (const sel of sels) {
+    for (const sel of genericSels) {
       const el = document.querySelector(sel);
-      if (el && el.innerText && el.innerText.length > 100) return el.innerText.trim();
+      if (el && el.innerText && el.innerText.length > 150) return el.innerText.trim().slice(0, 8000);
     }
     const main = document.querySelector('main');
     return main ? main.innerText.trim().slice(0, 8000) : '';
@@ -395,14 +465,37 @@ Output ONLY the corrected text. No preamble, no explanation.`;
       };
     }
 
-    // LinkedIn
+    if (site === 'greenhouse') {
+      const roleEl    = document.querySelector('h1.app-title, h1');
+      const companyEl = document.querySelector('.company-name, [class*="company-name"]');
+      return { role: roleEl ? roleEl.innerText.trim().split('\n')[0] : '', company: companyEl ? companyEl.innerText.trim().split('\n')[0] : '' };
+    }
+
+    if (site === 'lever') {
+      const roleEl    = document.querySelector('.posting-headline h2, [data-qa="posting-name"], h2');
+      const companyEl = document.querySelector('.main-header-text .title, .main-header-text');
+      return { role: roleEl ? roleEl.innerText.trim().split('\n')[0] : '', company: companyEl ? companyEl.innerText.trim().split('\n')[0] : '' };
+    }
+
+    if (site === 'workday') {
+      const roleEl = document.querySelector('[data-automation-id="jobPostingHeader"] h2, h1');
+      return { role: roleEl ? roleEl.innerText.trim().split('\n')[0] : '', company: '' };
+    }
+
+    if (site === 'foundit') {
+      const roleEl    = document.querySelector('.jd-header-title, h1');
+      const companyEl = document.querySelector('.jd-header-comp-name, [class*="comp-name"]');
+      return { role: roleEl ? roleEl.innerText.trim().split('\n')[0] : '', company: companyEl ? companyEl.innerText.trim().split('\n')[0] : '' };
+    }
+
+    // LinkedIn + generic
     const roleEl = document.querySelector('.job-details-jobs-unified-top-card__job-title, .jobs-unified-top-card__job-title, h1');
     const companyEl = document.querySelector(
       '.job-details-jobs-unified-top-card__company-name a, .jobs-unified-top-card__company-name, [class*="company-name"] a, [class*="company-name"]'
     );
     return {
-      role:    roleEl    ? roleEl.innerText.trim().split('\n')[0]    : '',
-      company: companyEl ? companyEl.innerText.trim().split('\n')[0] : '',
+      role:    roleEl    ? roleEl.innerText.trim().split('\n')[0]    : (document.title.split(' - ')[0] || ''),
+      company: companyEl ? companyEl.innerText.trim().split('\n')[0] : (document.title.split(' - ').slice(-1)[0] || ''),
     };
   }
 

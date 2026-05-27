@@ -89,7 +89,7 @@ export default async function Home() {
               </div>
               <h3 className="font-semibold mb-2">Open any job page</h3>
               <p className="text-sm text-gray-500 leading-relaxed">
-                Works on LinkedIn, Naukri, Wellfound, Instahyre, and Hirect. Click the &quot;Tailor with AI&quot; button — it reads the job description and your CV automatically.
+                Works on LinkedIn, Naukri, Wellfound, Instahyre, and Hirect. Click the &quot;Tailor with AI&quot; button. It reads the job description and your CV automatically.
               </p>
             </div>
             <div className="text-center">
@@ -169,7 +169,7 @@ export default async function Home() {
                 Naukrify output (voice-filtered)
               </p>
               <p className="text-sm text-gray-700 leading-relaxed">
-                &ldquo;At Razorpay I built the sponsorship vertical from scratch — 12 brand partners in
+                &ldquo;At Razorpay I built the sponsorship vertical from scratch. 12 brand partners,
                 8 months, ₹2.4 Cr in revenue. Your JD asks for someone who can run the full BD cycle
                 solo, and that&apos;s exactly what I did there...&rdquo;
               </p>
@@ -215,7 +215,7 @@ export default async function Home() {
               'Voice-rules filter on every output',
               'Application tracker with notes and CSV export',
               'Recruiter reply drafts (paste message, get reply)',
-              'Your own Gemini key — zero ongoing cost',
+              'Your own Gemini key, zero ongoing cost',
               '10 free trial applications to start',
             ].map((item) => (
               <li key={item} className="flex items-start gap-2">
@@ -246,7 +246,7 @@ export default async function Home() {
               },
               {
                 q: 'What happens to my CV data?',
-                a: 'Your CV text is stored encrypted in Supabase (Postgres). Only you can see it. Your Gemini API key never leaves your browser — it is never sent to our servers.',
+                a: 'Your CV text is stored encrypted in Supabase (Postgres). Only you can see it. Your Gemini API key never leaves your browser. It is never sent to our servers.',
               },
               {
                 q: 'Will I be charged monthly?',
@@ -262,7 +262,7 @@ export default async function Home() {
               },
               {
                 q: 'Is there interview prep?',
-                a: 'Yes. The web dashboard has an "Interview prep" tab. Paste any job description, enter your Gemini key, and get 12 tailored questions across 4 categories — with answer frameworks drawn from your actual CV.',
+                a: 'Yes. The web dashboard has an "Interview prep" tab. Paste any job description, enter your Gemini key, and get 12 tailored questions across 4 categories, with answer frameworks drawn from your actual CV.',
               },
             ].map((item) => (
               <div key={item.q} className="border-b border-gray-200 pb-6 last:border-0">
@@ -276,7 +276,7 @@ export default async function Home() {
 
       {/* ── Footer ── */}
       <footer className="border-t border-gray-100 px-6 py-8 text-center text-xs text-gray-400 space-y-2">
-        <p>Naukrify — built for India job hunters. Questions? omkar@naukrify.com</p>
+        <p>Naukrify. Built for India job hunters. Questions? omkar@naukrify.com</p>
         <div className="flex items-center justify-center gap-4">
           <a href="/privacy" className="hover:text-gray-600 transition-colors">Privacy Policy</a>
           <a href="/terms" className="hover:text-gray-600 transition-colors">Terms of Service</a>
