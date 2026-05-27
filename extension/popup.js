@@ -312,8 +312,14 @@ Return JSON only: {"summary": "...", "coverLetter": "..."}`;
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         const msg = err.error?.message || '';
-        if (res.status === 429) throw new Error('Gemini rate limit hit. Wait a minute and try again.');
-        if (res.status === 403) throw new Error('Gemini API key invalid or quota exceeded.');
+        if (res.status === 429) {
+          const daily = (msg || '').toLowerCase();
+          if (daily.includes('day') || daily.includes('daily') || daily.includes('exhausted')) {
+            throw new Error('Gemini daily limit reached (1,500 free/day). Enable billing at aistudio.google.com/app/apikey — costs less than ₹1/day at normal usage.');
+          }
+          throw new Error('Gemini rate limit hit (10 requests/min). Wait 60 seconds and try again.');
+        }
+        if (res.status === 403) throw new Error('Gemini API key invalid. Check the key in the popup settings.');
         throw new Error(msg || `Gemini error ${res.status}`);
       }
       const data2  = await res.json();

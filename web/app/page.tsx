@@ -238,7 +238,7 @@ export default async function Home() {
             {[
               {
                 q: 'What is a Gemini API key and how do I get one?',
-                a: 'Google Gemini is a free AI. Go to aistudio.google.com/app/apikey, sign in with Google, and click "Create API key". Takes 2 minutes. Paste it into the Naukrify extension once and you\'re set.',
+                a: 'Google Gemini is a free AI. Go to aistudio.google.com/app/apikey, sign in with Google, and click "Create API key". Free tier gives 1,500 requests per day and 10 per minute — more than enough for a normal job search. If you hit the daily limit, enable billing in Google Cloud Console (costs less than ₹1/day at normal usage, and the free tier still applies).',
               },
               {
                 q: 'Does it work on Naukri and Wellfound too?',

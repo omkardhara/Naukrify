@@ -186,7 +186,12 @@ Output ONLY the CV text. No preamble, no explanation.`;
         continue;
       }
       if (res.status === 429) {
-        throw new Error('Gemini rate limit hit. Wait a few minutes, then click Regenerate. For higher limits, add billing in Google Cloud Console (free-tier usage stays free).');
+        const body429 = await res.json().catch(() => ({}));
+        const msg429  = (body429.error?.message || '').toLowerCase();
+        if (msg429.includes('day') || msg429.includes('daily') || msg429.includes('exhausted')) {
+          throw new Error('Gemini daily limit reached (1,500 free requests/day). Enable billing at aistudio.google.com/app/apikey to continue — costs less than ₹1 per day at normal usage.');
+        }
+        throw new Error('Gemini rate limit hit (10 requests/min). Wait 60 seconds and click Regenerate.');
       }
       if (res.status === 400) {
         throw new Error('Gemini API key invalid or missing. Check your key in the extension popup.');
