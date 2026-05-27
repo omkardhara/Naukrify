@@ -14,6 +14,7 @@ interface Application {
   company: string | null
   role_title: string | null
   cover_letter: string | null
+  jd: string | null
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -50,7 +51,7 @@ export default function InterviewPrep({ cv, userId }: Props) {
     const supabase = createClient()
     supabase
       .from('applications')
-      .select('id,company,role_title,cover_letter')
+      .select('id,company,role_title,cover_letter,jd')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(30)
@@ -72,10 +73,7 @@ export default function InterviewPrep({ cv, userId }: Props) {
       return
     }
     const app = apps.find((a) => a.id === id)
-    if (app?.cover_letter) {
-      // Cover letter is generated FROM the JD — use it as context proxy
-      setJd('')
-    }
+    setJd(app?.jd ?? '')
   }
 
   function toggleExpanded(i: number) {
@@ -202,7 +200,7 @@ export default function InterviewPrep({ cv, userId }: Props) {
           value={jd}
           onChange={(e) => setJd(e.target.value)}
           rows={6}
-          placeholder="Paste the job description here..."
+          placeholder="Job description will auto-fill when you pick a role above, or paste it manually here..."
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
         />
       </div>

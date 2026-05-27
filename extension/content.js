@@ -607,6 +607,7 @@ Output ONLY the corrected text. No preamble, no explanation.`;
           source:       currentSite(),
           coverLetter:  clEl.value,
           cvSummary:    cvEl.value,
+          jd:           jd,
         }).catch(() => {}); // swallow network errors
       }
 

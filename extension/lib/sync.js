@@ -66,7 +66,7 @@ async function syncCvFromAccount(accessToken) { // eslint-disable-line no-unused
  * Fire-and-forget: caller should not await this in the critical path.
  *
  * @param {string} accessToken
- * @param {{ company: string, roleTitle: string, jobUrl: string, coverLetter: string, cvSummary: string }} payload
+ * @param {{ company: string, roleTitle: string, jobUrl: string, coverLetter: string, cvSummary: string, jd: string }} payload
  * @returns {Promise<void>}
  */
 async function logApplication(accessToken, payload) { // eslint-disable-line no-unused-vars
@@ -111,6 +111,7 @@ async function logApplication(accessToken, payload) { // eslint-disable-line no-
     source:       payload.source      || 'linkedin',
     cover_letter: payload.coverLetter || null,
     cv_summary:   payload.cvSummary   || null,
+    jd:           payload.jd          || null,
   };
 
   if (existingId) {
