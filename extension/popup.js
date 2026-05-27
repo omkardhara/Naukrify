@@ -138,7 +138,8 @@ chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
     const results = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: () => {
-        const sels = [
+        // ── JD extraction ──
+        const jdSels = [
           '[data-automation-id="jobPostingDescription"]',
           '#job-description','#jobDescription',
           '[class*="job-description"]','[class*="jobDescription"]',
@@ -149,17 +150,58 @@ chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
           'main article','main',
         ];
         let jd = '';
-        for (const sel of sels) {
+        for (const sel of jdSels) {
           const el = document.querySelector(sel);
           if (el && el.innerText && el.innerText.trim().length > 150) {
             jd = el.innerText.trim().slice(0, 8000);
             break;
           }
         }
+
+        // ── Role extraction ──
         const h1 = document.querySelector('h1');
         const role = h1 ? h1.innerText.trim().split('\n')[0] : '';
-        const titleParts = document.title.split(/[-|–—]/);
-        const company = titleParts.length > 1 ? titleParts[titleParts.length - 1].trim() : '';
+
+        // ── Company extraction — try multiple sources in priority order ──
+        let company = '';
+
+        // 1. OG / meta tags — most reliable
+        company = document.querySelector('meta[property="og:site_name"]')?.content?.trim()
+               || document.querySelector('meta[name="application-name"]')?.content?.trim()
+               || '';
+
+        // 2. Common company name selectors on career pages
+        if (!company) {
+          const companySels = [
+            '[class*="company-name"]','[class*="companyName"]',
+            '[class*="employer-name"]','[class*="org-name"]',
+            '[data-automation*="company"]','[data-testid*="company"]',
+            '.company','[itemprop="hiringOrganization"] [itemprop="name"]',
+          ];
+          for (const sel of companySels) {
+            const el = document.querySelector(sel);
+            if (el && el.innerText && el.innerText.trim().length > 1) {
+              company = el.innerText.trim().split('\n')[0];
+              break;
+            }
+          }
+        }
+
+        // 3. Hostname — strip common prefixes and use the domain name
+        if (!company) {
+          const host = location.hostname.replace(/^(www|careers|jobs|apply|hiring|talent|recruiting|work)\./i, '');
+          const domainName = host.split('.')[0];
+          if (domainName && domainName.length > 1) {
+            company = domainName.charAt(0).toUpperCase() + domainName.slice(1);
+          }
+        }
+
+        // 4. Page title — last segment after dash/pipe
+        if (!company) {
+          const titleParts = document.title.split(/\s[-|]\s/);
+          if (titleParts.length > 1) company = titleParts[titleParts.length - 1].trim();
+        }
+
         return { jd, role, company };
       },
     });
